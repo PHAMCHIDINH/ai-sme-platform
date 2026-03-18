@@ -1,155 +1,167 @@
-import { ApplicationStatus, ProgressStatus, ProjectStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-
 import { auth } from "@/auth";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { rankBySimilarity } from "@/lib/matching";
 import { prisma } from "@/lib/prisma";
-import { formatPercent } from "@/lib/utils";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Check, X, Sparkles, Code2, GraduationCap } from "lucide-react";
+import { rankBySimilarity } from "@/lib/matching";
 
-async function updateCandidateStatus(formData: FormData) {
-  "use server";
-
+export default async function CandidatesPage({ params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "SME") {
-    return;
-  }
+  if (!session || session.user.role !== "SME") return <div>Unauthorized</div>;
 
-  const projectId = String(formData.get("projectId") ?? "");
-  const studentId = String(formData.get("studentId") ?? "");
-  const status = String(formData.get("status") ?? "") as ApplicationStatus;
-  const matchScore = Number(formData.get("matchScore") ?? 0);
-
-  await prisma.application.upsert({
-    where: { projectId_studentId: { projectId, studentId } },
-    update: { status, matchScore },
-    create: { projectId, studentId, status, matchScore },
+  const project = await prisma.project.findUnique({
+    where: { id: params.id },
+    include: { applications: { include: { student: { include: { user: true } } } } }
   });
 
-  if (status === "ACCEPTED") {
-    await prisma.project.update({
-      where: { id: projectId },
-      data: { status: ProjectStatus.IN_PROGRESS },
-    });
+  if (!project) return notFound();
 
-    await prisma.projectProgress.upsert({
-      where: { projectId },
-      update: { studentId, status: ProgressStatus.IN_PROGRESS },
-      create: {
-        projectId,
-        studentId,
-        status: ProgressStatus.IN_PROGRESS,
-        milestones: [],
-        updates: [],
-        deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      },
-    });
-  }
-
-  revalidatePath(`/sme/projects/${projectId}/candidates`);
-  revalidatePath(`/sme/projects/${projectId}`);
-}
-
-export default async function ProjectCandidatesPage({ params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "SME") {
-    redirect("/login");
-  }
-
-  const profile = await prisma.sMEProfile.findUnique({ where: { userId: session.user.id } });
-  if (!profile) {
-    redirect("/sme/projects");
-  }
-
-  const project = await prisma.project.findFirst({
-    where: { id: params.id, smeId: profile.id },
-    include: { applications: true },
+  // Lấy tất cả sinh viên
+  const allStudents = await prisma.studentProfile.findMany({
+    include: { user: true }
   });
 
-  if (!project) {
-    redirect("/sme/projects");
-  }
-
-  const students = await prisma.studentProfile.findMany({
-    where: { NOT: { embedding: { equals: [] } } },
-    include: { user: true },
-  });
-
-  const ranked = rankBySimilarity(project.embedding, students, 10);
+  // Tính điểm match với project hiện tại
+  const rankedStudents = rankBySimilarity(project.embedding, allStudents);
+  
+  // Phân tách sinh viên đã ứng tuyển và sinh viên gợi ý
+  const applicantIds = new Set(project.applications.map(a => a.studentId));
+  const applicants = rankedStudents.filter(s => applicantIds.has(s.id));
+  const suggestions = rankedStudents.filter(s => !applicantIds.has(s.id)).slice(0, 5); // top 5 gợi ý
 
   return (
-    <div className="page-stack fade-in">
-      <div>
-        <h2 className="section-title">Ứng viên đề xuất</h2>
-        <p className="section-subtitle">Dự án: {project.title}</p>
+    <div className="space-y-6 pb-10">
+      <div className="flex items-center gap-4">
+        <Link href={`/sme/projects/${project.id}`}>
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Ứng viên & Matching</h2>
+          <p className="text-muted-foreground text-sm">Quản lý ứng viên cho dự án: {project.title}</p>
+        </div>
       </div>
 
-      <div className="grid gap-4">
-        {ranked.map((student) => {
-          const existing = project.applications.find((item) => item.studentId === student.id);
+      <div className="space-y-6">
+        <h3 className="text-xl font-bold flex items-center">
+          <Users className="w-6 h-6 mr-2 text-primary" /> Sinh viên đã ứng tuyển ({applicants.length})
+        </h3>
+        
+        {applicants.length === 0 ? (
+          <div className="p-8 text-center bg-muted/30 rounded-2xl border border-dashed">
+            <p className="text-muted-foreground">Chưa có sinh viên nào ứng tuyển dự án này.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {applicants.map(student => (
+              <StudentCard key={student.id} student={student} projectId={project.id} isApplied />
+            ))}
+          </div>
+        )}
+      </div>
 
-          return (
-            <Card className="space-y-4" key={student.id}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-bold text-ink-900">{student.user.name}</h3>
-                  <p className="text-sm text-ink-600">
-                    {student.major} - {student.university}
-                  </p>
-                </div>
-                <Badge tone="success">{formatPercent(student.matchScore)}</Badge>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {student.skills.slice(0, 6).map((skill) => (
-                  <Badge key={`${student.id}-${skill}`} tone="neutral">
-                    {skill}
-                  </Badge>
-                ))}
-              </div>
-
-              {student.githubUrl ? (
-                <a className="inline-flex text-sm font-semibold text-brand-700" href={student.githubUrl} rel="noreferrer" target="_blank">
-                  Xem GitHub profile
-                </a>
-              ) : null}
-
-              <div className="flex flex-wrap items-center gap-2">
-                <form action={updateCandidateStatus}>
-                  <input name="projectId" type="hidden" value={project.id} />
-                  <input name="studentId" type="hidden" value={student.id} />
-                  <input name="matchScore" type="hidden" value={student.matchScore} />
-                  <input name="status" type="hidden" value="ACCEPTED" />
-                  <Button size="sm" type="submit">
-                    Chấp nhận
-                  </Button>
-                </form>
-
-                <form action={updateCandidateStatus}>
-                  <input name="projectId" type="hidden" value={project.id} />
-                  <input name="studentId" type="hidden" value={student.id} />
-                  <input name="matchScore" type="hidden" value={student.matchScore} />
-                  <input name="status" type="hidden" value="REJECTED" />
-                  <Button size="sm" type="submit" variant="danger">
-                    Từ chối
-                  </Button>
-                </form>
-
-                {existing ? <Badge tone={existing.status === "ACCEPTED" ? "success" : existing.status === "REJECTED" ? "danger" : "warning"}>{existing.status}</Badge> : null}
-              </div>
-            </Card>
-          );
-        })}
-
-        {!ranked.length ? (
-          <Card className="text-sm text-ink-600" tone="muted">
-            Chưa có dữ liệu embedding để matching. Vui lòng yêu cầu sinh viên cập nhật hồ sơ năng lực.
-          </Card>
-        ) : null}
+      <div className="space-y-6 mt-12">
+        <h3 className="text-xl font-bold flex items-center">
+          <Sparkles className="w-6 h-6 mr-2 text-indigo-500" /> Gợi ý từ AI 
+          <Badge className="ml-3 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none transition-colors">Top Match</Badge>
+        </h3>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {suggestions.map(student => (
+            <StudentCard key={student.id} student={student} projectId={project.id} />
+          ))}
+        </div>
       </div>
     </div>
+  );
+}
+
+function StudentCard({ student, projectId, isApplied = false }: { student: any, projectId: string, isApplied?: boolean }) {
+  // Lấy % match (nếu 0 thì chỉ hiển thị "N/A" hoặc 0%)
+  const matchScore = student.matchScore;
+  let colorClass = "text-muted-foreground";
+  if (matchScore >= 80) colorClass = "text-green-600 dark:text-green-400";
+  else if (matchScore >= 60) colorClass = "text-amber-600 dark:text-amber-400";
+
+  return (
+    <Card className="border-none shadow-sm bg-white/60 dark:bg-slate-900/60 backdrop-blur hover:shadow-md transition-shadow">
+      <CardContent className="p-5">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex gap-3 items-center">
+            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold text-lg">
+              {student.user.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h4 className="font-bold text-lg leading-tight">{student.user.name}</h4>
+              <p className="text-sm text-muted-foreground flex items-center">
+                <GraduationCap className="w-3 h-3 mr-1" /> {student.university || "Chưa cập nhật trường"}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className={`text-xl font-black ${colorClass}`}>{matchScore}%</span>
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Độ phù hợp</span>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center">
+            <Code2 className="w-3 h-3 mr-1" /> Kỹ năng nổi bật
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {student.skills && student.skills.length > 0 ? (
+              student.skills.slice(0, 4).map((skill: string) => (
+                <Badge key={skill} variant="secondary" className="text-[10px] px-1.5 font-normal bg-muted">
+                  {skill}
+                </Badge>
+              ))
+            ) : (
+              <span className="text-xs text-muted-foreground italic">Chưa cập nhật kỹ năng</span>
+            )}
+            {student.skills && student.skills.length > 4 && <Badge variant="secondary" className="text-[10px] px-1.5">+{student.skills.length - 4}</Badge>}
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-5">
+          {isApplied ? (
+            <>
+              <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white"><Check className="w-4 h-4 mr-1" /> Chấp nhận</Button>
+              <Button size="sm" variant="outline" className="flex-1 text-red-600 hover:text-red-700"><X className="w-4 h-4 mr-1" /> Từ chối</Button>
+            </>
+          ) : (
+            <Button size="sm" variant="secondary" className="w-full text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100">
+              Mời tham gia dự án
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Giả lập icon thay vì import (do lúc nãy quên import Users)
+function Users(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
   );
 }

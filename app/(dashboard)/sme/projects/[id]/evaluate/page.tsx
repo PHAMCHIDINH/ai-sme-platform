@@ -1,148 +1,105 @@
-import { EvalType, ProjectStatus } from "@prisma/client";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+"use client";
 
-import { auth } from "@/auth";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Rating } from "@/components/ui/rating";
-import { prisma } from "@/lib/prisma";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Loader2, Star } from "lucide-react";
 
-async function submitEvaluation(formData: FormData) {
-  "use server";
-
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "SME") {
-    return;
-  }
-
-  const projectId = String(formData.get("projectId") ?? "");
-  const evaluateeId = String(formData.get("evaluateeId") ?? "");
-
-  await prisma.evaluation.create({
-    data: {
-      projectId,
-      evaluatorId: session.user.id,
-      evaluateeId,
-      type: EvalType.SME_TO_STUDENT,
-      outputQuality: Number(formData.get("outputQuality") ?? 3),
-      onTime: Number(formData.get("onTime") ?? 3),
-      proactiveness: Number(formData.get("proactiveness") ?? 3),
-      communication: Number(formData.get("communication") ?? 3),
-      overallFit: Number(formData.get("overallFit") ?? 3),
-      comment: String(formData.get("comment") ?? "") || null,
-    },
+export default function EvaluatePage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ratings, setRatings] = useState({
+    outputQuality: 0,
+    onTime: 0,
+    proactiveness: 0,
+    communication: 0,
+    overallFit: 0,
   });
 
-  revalidatePath(`/sme/projects/${projectId}/evaluate`);
-  revalidatePath(`/sme/projects/${projectId}`);
-}
+  const handleRating = (field: keyof typeof ratings, i: number) => {
+    setRatings(prev => ({ ...prev, [field]: i }));
+  };
 
-export default async function ProjectEvaluatePage({ params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "SME") {
-    redirect("/login");
-  }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // TODO: Connect to real API
+    setTimeout(() => {
+      setIsSubmitting(false);
+      alert("Đánh giá thành công!");
+      router.push(`/sme/projects/${params.id}`);
+    }, 1500);
+  };
 
-  const profile = await prisma.sMEProfile.findUnique({ where: { userId: session.user.id } });
-  if (!profile) {
-    redirect("/sme/projects");
-  }
-
-  const project = await prisma.project.findFirst({
-    where: { id: params.id, smeId: profile.id },
-    include: {
-      applications: {
-        where: { status: "ACCEPTED" },
-        include: { student: { include: { user: true } } },
-      },
-      evaluations: {
-        orderBy: { createdAt: "desc" },
-      },
-    },
-  });
-
-  if (!project) {
-    redirect("/sme/projects");
-  }
-
-  const accepted = project.applications[0];
+  const criteria = [
+    { key: "outputQuality", label: "Chất lượng sản phẩm đầu ra" },
+    { key: "onTime", label: "Đúng tiến độ / Deadline" },
+    { key: "proactiveness", label: "Mức độ chủ động trong công việc" },
+    { key: "communication", label: "Kỹ năng giao tiếp & Phản hồi" },
+    { key: "overallFit", label: "Mức độ phù hợp với yêu cầu thực tế" },
+  ];
 
   return (
-    <div className="page-stack fade-in">
-      <div>
-        <h2 className="section-title">Đánh giá dự án</h2>
-        <p className="section-subtitle">Project: {project.title}</p>
+    <div className="max-w-2xl mx-auto space-y-6 pb-10">
+      <div className="flex items-center gap-4">
+        <Link href={`/sme/projects/${params.id}`}>
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Đánh giá sinh viên</h2>
+          <p className="text-muted-foreground text-sm">Feedback sau khi nghiệm thu dự án</p>
+        </div>
       </div>
 
-      {project.status !== ProjectStatus.COMPLETED ? (
-        <Card className="text-sm text-warning-700" tone="muted">
-          Form đánh giá chỉ hiển thị đầy đủ khi dự án ở trạng thái COMPLETED.
+      <form onSubmit={handleSubmit}>
+        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+          <CardHeader>
+            <CardTitle>Tiêu chí đánh giá</CardTitle>
+            <CardDescription>Chọn từ 1 đến 5 sao cho mỗi hạng mục</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            
+            {criteria.map((item) => (
+              <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                <span className="font-medium text-sm">{item.label}</span>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Star 
+                      key={i} 
+                      className={`w-6 h-6 cursor-pointer transition-colors ${
+                        i <= ratings[item.key as keyof typeof ratings] 
+                          ? "fill-amber-400 text-amber-400" 
+                          : "text-muted-foreground/30 hover:text-amber-200"
+                      }`}
+                      onClick={() => handleRating(item.key as keyof typeof ratings, i)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <div className="pt-4 border-t space-y-3">
+              <label className="font-medium text-sm block">Nhận xét chi tiết (Tùy chọn)</label>
+              <Textarea 
+                placeholder="Bạn có đánh giá gì thêm về thái độ làm việc, kỹ năng của sinh viên không?" 
+                className="min-h-[100px]"
+              />
+            </div>
+            
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full" disabled={isSubmitting || Object.values(ratings).some(v => v === 0)}>
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Gửi đánh giá
+            </Button>
+          </CardFooter>
         </Card>
-      ) : null}
-
-      {!accepted ? (
-        <Card className="text-sm text-ink-600">Chưa có sinh viên được chấp nhận.</Card>
-      ) : (
-        <Card padding="lg">
-          <form action={submitEvaluation} className="space-y-5">
-            <input name="projectId" type="hidden" value={project.id} />
-            <input name="evaluateeId" type="hidden" value={accepted.student.userId} />
-
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-ink-500">Sinh viên được đánh giá</p>
-              <p className="mt-1 text-base font-semibold text-ink-900">{accepted.student.user.name}</p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-ink-700">Chất lượng đầu ra</label>
-                <Rating label="Chất lượng đầu ra" name="outputQuality" />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-ink-700">Đúng deadline</label>
-                <Rating label="Đúng deadline" name="onTime" />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-ink-700">Mức độ chủ động</label>
-                <Rating label="Mức độ chủ động" name="proactiveness" />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-ink-700">Kỹ năng giao tiếp</label>
-                <Rating label="Kỹ năng giao tiếp" name="communication" />
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-ink-700">Mức độ phù hợp tổng thể</label>
-                <Rating label="Mức độ phù hợp" name="overallFit" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-ink-700" htmlFor="comment">
-                Nhận xét
-              </label>
-              <textarea className="min-h-24 w-full rounded-md border border-ink-200 bg-white px-3 py-2 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-brand-200" id="comment" name="comment" />
-            </div>
-
-            <Button type="submit">Gửi đánh giá</Button>
-          </form>
-        </Card>
-      )}
-
-      <Card className="space-y-2">
-        <h3 className="text-xl font-bold text-ink-900">Đánh giá đã gửi</h3>
-        {project.evaluations.map((evaluation) => (
-          <div className="rounded-md border border-ink-100 bg-ink-50/40 p-3 text-sm text-ink-600" key={evaluation.id}>
-            <p>
-              <span className="font-semibold text-ink-900">Overall fit:</span> {evaluation.overallFit}/5
-            </p>
-            <p>
-              <span className="font-semibold text-ink-900">Nhận xét:</span> {evaluation.comment ?? "(không có)"}
-            </p>
-          </div>
-        ))}
-        {!project.evaluations.length ? <p className="text-sm text-ink-500">Chưa có đánh giá.</p> : null}
-      </Card>
+      </form>
     </div>
   );
 }

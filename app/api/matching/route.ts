@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     },
   });
 
-  const ranked = rankBySimilarity(project.embedding, students, 10).map((student) => ({
+  const ranked = rankBySimilarity(project.embedding, students).slice(0, 10).map((student) => ({
     id: student.id,
     userId: student.userId,
     name: student.user.name,

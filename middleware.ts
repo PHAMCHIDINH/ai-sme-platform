@@ -8,16 +8,33 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const pathname = req.nextUrl.pathname;
   const session = req.auth;
+  const role = session?.user?.role as string | undefined;
 
-  if (!session) {
+  // Đã đăng nhập mà vào trang gốc hoặc trang login/register → redirect vào dashboard
+  const publicPaths = ["/", "/login", "/register"];
+  const isPublicPath = publicPaths.some(
+    (p) => pathname === p || pathname.startsWith(p + "?")
+  );
+  if (session && isPublicPath) {
+    if (role === "SME") {
+      return NextResponse.redirect(new URL("/sme/dashboard", req.url));
+    } else {
+      return NextResponse.redirect(new URL("/student/dashboard", req.url));
+    }
+  }
+
+  // Chưa đăng nhập mà vào trang protected → redirect về login
+  const isProtected =
+    pathname.startsWith("/sme") || pathname.startsWith("/student");
+  if (!session && isProtected) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (pathname.startsWith("/sme") && session.user.role !== "SME") {
+  // Sai role → redirect về đúng dashboard
+  if (session && pathname.startsWith("/sme") && role !== "SME") {
     return NextResponse.redirect(new URL("/student/dashboard", req.url));
   }
-
-  if (pathname.startsWith("/student") && session.user.role !== "STUDENT") {
+  if (session && pathname.startsWith("/student") && role !== "STUDENT") {
     return NextResponse.redirect(new URL("/sme/dashboard", req.url));
   }
 
@@ -25,5 +42,11 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/sme/:path*", "/student/:path*"],
+  matcher: [
+    "/",
+    "/login",
+    "/register",
+    "/sme/:path*",
+    "/student/:path*",
+  ],
 };

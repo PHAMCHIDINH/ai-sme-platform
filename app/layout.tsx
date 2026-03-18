@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Be_Vietnam_Pro, Space_Grotesk, Geist } from "next/font/google";
+import { Be_Vietnam_Pro, Space_Grotesk, Inter } from "next/font/google";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],

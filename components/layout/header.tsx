@@ -23,7 +23,7 @@ export function Header({ name, role, onToggleNavigation }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <Badge tone={role === "SME" ? "info" : "success"}>{role === "SME" ? "Doanh nghiệp" : "Sinh viên"}</Badge>
+          <Badge variant={role === "SME" ? "default" : "secondary"}>{role === "SME" ? "Doanh nghiệp" : "Sinh viên"}</Badge>
           <SignOutButton />
         </div>
       </div>

@@ -1,18 +1,42 @@
-import { redirect } from "next/navigation";
-
 import { auth } from "@/auth";
-import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { redirect } from "next/navigation";
+import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { ReactNode } from "react";
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login");
   }
 
+  const role = (session.user as any).role as "SME" | "STUDENT";
+  const userName = session.user.name || session.user.email || "Người dùng";
+
   return (
-    <DashboardShell name={session.user.name ?? "User"} role={session.user.role}>
-      {children}
-    </DashboardShell>
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <div className="hidden md:flex">
+        <DashboardSidebar role={role} userName={userName} />
+      </div>
+
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Mobile header */}
+        <header className="flex md:hidden h-14 border-b bg-background/95 backdrop-blur items-center justify-between px-4">
+          <span className="font-bold text-base">
+            VnSME<span className="text-primary">Match</span>
+          </span>
+          <div className="text-sm text-muted-foreground">{userName}</div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-muted/10 p-4 md:p-8">
+          <div className="max-w-6xl mx-auto h-full space-y-8">{children}</div>
+        </main>
+      </div>
+    </div>
   );
 }

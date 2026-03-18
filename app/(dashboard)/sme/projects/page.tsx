@@ -1,94 +1,107 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-
 import { auth } from "@/auth";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays, PlusCircle, Users } from "lucide-react";
 
-const statusTone: Record<string, "neutral" | "info" | "success" | "warning" | "danger"> = {
-  OPEN: "info",
-  IN_PROGRESS: "warning",
-  SUBMITTED: "neutral",
-  COMPLETED: "success",
-};
-
-export default async function SmeProjectsPage() {
+export default async function SMEProjectsPage() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "SME") {
-    redirect("/login");
+  
+  if (!session || session.user.role !== "SME") {
+    return <div>Unauthorized</div>;
   }
 
-  const profile = await prisma.sMEProfile.findUnique({ where: { userId: session.user.id } });
+  const smeProfile = await prisma.sMEProfile.findUnique({
+    where: { userId: session.user.id }
+  });
 
-  const projects = profile
-    ? await prisma.project.findMany({
-        where: { smeId: profile.id },
-        include: { _count: { select: { applications: true } } },
-        orderBy: { createdAt: "desc" },
-      })
-    : [];
+  const projects = smeProfile ? await prisma.project.findMany({
+    where: { smeId: smeProfile.id },
+    orderBy: { createdAt: "desc" },
+    include: { _count: { select: { applications: true } } }
+  }) : [];
 
   return (
-    <div className="page-stack fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="section-title">Dự án của doanh nghiệp</h2>
-          <p className="section-subtitle">Quản lý trạng thái từng dự án và số lượng hồ sơ ứng tuyển.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Dự án của tôi</h2>
+          <p className="text-muted-foreground text-sm">Quản lý và theo dõi tiến độ các dự án đã đăng</p>
         </div>
         <Link href="/sme/projects/new">
-          <Button>Tạo dự án</Button>
+          <Button className="rounded-full shadow-md"><PlusCircle className="w-4 h-4 mr-2" /> Tạo dự án mới</Button>
         </Link>
       </div>
 
-      <div className="grid gap-4">
-        {projects.map((project) => (
-          <Card className="space-y-4" key={project.id}>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h3 className="text-xl font-bold text-ink-900">{project.title}</h3>
-                <p className="mt-1 text-sm text-ink-600">{project.description}</p>
-              </div>
-              <Badge tone={statusTone[project.status] ?? "neutral"}>{project.status}</Badge>
+      {projects.length === 0 ? (
+        <Card className="flex flex-col items-center justify-center h-64 border-dashed bg-muted/30">
+          <CardContent className="flex flex-col items-center text-center pt-6">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4 text-muted-foreground">
+              <PlusCircle className="w-8 h-8 opacity-50" />
             </div>
-
-            <div className="grid gap-3 text-sm text-ink-600 md:grid-cols-3">
-              <p>
-                <span className="font-semibold text-ink-900">Ứng viên:</span> {project._count.applications}
-              </p>
-              <p>
-                <span className="font-semibold text-ink-900">Deadline:</span>{" "}
-                {project.deadline ? new Date(project.deadline).toLocaleDateString("vi-VN") : "Chưa đặt"}
-              </p>
-              <p>
-                <span className="font-semibold text-ink-900">Độ khó:</span> {project.difficulty}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link href={`/sme/projects/${project.id}`}>
-                <Button size="sm" variant="secondary">
-                  Chi tiết
-                </Button>
-              </Link>
-              <Link href={`/sme/projects/${project.id}/candidates`}>
-                <Button size="sm">Xem ứng viên</Button>
-              </Link>
-            </div>
-          </Card>
-        ))}
-
-        {!projects.length ? (
-          <Card className="space-y-2 text-center" tone="muted">
-            <h3 className="text-lg font-bold text-ink-900">Chưa có dự án nào</h3>
-            <p className="text-sm text-ink-600">Tạo dự án đầu tiên để bắt đầu tìm ứng viên phù hợp bằng AI matching.</p>
-            <Link className="mx-auto" href="/sme/projects/new">
-              <Button size="sm">Tạo dự án ngay</Button>
+            <h3 className="text-xl font-semibold mb-2">Chưa có dự án nào</h3>
+            <p className="text-muted-foreground mb-6 max-w-sm">Hãy đăng bài toán số hóa đầu tiên của doanh nghiệp bạn để tìm kiếm sinh viên phù hợp.</p>
+            <Link href="/sme/projects/new">
+              <Button>Đăng dự án ngay</Button>
             </Link>
-          </Card>
-        ) : null}
-      </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <Card key={project.id} className="flex flex-col overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur border-none shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3 border-b bg-muted/20">
+                <div className="flex justify-between items-start mb-2">
+                  <Badge variant={
+                    project.status === "OPEN" ? "default" :
+                    project.status === "IN_PROGRESS" ? "secondary" : "outline"
+                  }>
+                    {project.status === "OPEN" ? "Đang mở" : project.status === "IN_PROGRESS" ? "Đang tiến hành" : project.status}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground flex items-center">
+                    <CalendarDays className="w-3 h-3 mr-1" />
+                    {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true, locale: vi })}
+                  </span>
+                </div>
+                <CardTitle className="line-clamp-2 text-lg leading-tight group-hover:text-primary transition-colors">
+                  <Link href={`/sme/projects/${project.id}`}>{project.title}</Link>
+                </CardTitle>
+                <CardDescription className="line-clamp-2 mt-2">
+                  {project.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow pt-4">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {project.requiredSkills.slice(0, 3).map((skill) => (
+                    <Badge key={skill} variant="secondary" className="text-xs font-normal bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                      {skill}
+                    </Badge>
+                  ))}
+                  {project.requiredSkills.length > 3 && (
+                    <Badge variant="secondary" className="text-xs font-normal">+{project.requiredSkills.length - 3}</Badge>
+                  )}
+                </div>
+                
+                <div className="flex items-center text-sm font-medium text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 w-fit px-3 py-1.5 rounded-lg">
+                  <Users className="w-4 h-4 mr-2" />
+                  {project._count.applications} Ứng viên
+                </div>
+              </CardContent>
+              <CardFooter className="pt-0 pb-4 px-6 border-t mt-auto">
+                <Link href={`/sme/projects/${project.id}`} className="w-full mt-4">
+                  <Button variant="outline" className="w-full shadow-sm hover:bg-primary hover:text-primary-foreground transition-colors">
+                    Xem chi tiết
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

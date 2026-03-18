@@ -1,109 +1,114 @@
 "use client";
 
-import Link from "next/link";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
+import Link from "next/link";
+import { ArrowRight, Layers, Loader2 } from "lucide-react";
+import { authenticate } from "@/app/actions/auth";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-type SessionResponse = {
-  user?: {
-    role?: "SME" | "STUDENT";
-  };
-};
-
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
-
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      setError("Thông tin đăng nhập không đúng.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" });
-      const session = (await sessionResponse.json()) as SessionResponse;
-
-      if (session?.user?.role === "SME") {
-        router.push("/sme/dashboard");
-      } else if (session?.user?.role === "STUDENT") {
-        router.push("/student/dashboard");
-      } else {
-        router.push("/");
-      }
-
-      router.refresh();
-    } catch {
-      router.push("/");
-      router.refresh();
-    } finally {
-      setLoading(false);
-    }
-  };
+function LoginButton() {
+  const { pending } = useFormStatus();
 
   return (
-    <main className="page-wrap flex min-h-screen items-center py-12">
-      <div className="mx-auto w-full max-w-md">
-        <div className="glass-panel p-7 md:p-8">
-          <p className="kicker">Welcome Back</p>
-          <h1 className="mt-4 text-3xl font-bold text-ink-900">Đăng nhập</h1>
-          <p className="mt-2 text-sm text-ink-600">Sử dụng email và mật khẩu đã đăng ký để vào workspace của bạn.</p>
+    <Button className="w-full mt-6" type="submit" disabled={pending}>
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Đang đăng nhập...
+        </>
+      ) : (
+        <>
+          Đăng nhập <ArrowRight className="ml-2 w-4 h-4" />
+        </>
+      )}
+    </Button>
+  );
+}
 
-          <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-ink-700" htmlFor="email">
-                Email
-              </label>
-              <Input id="email" onChange={(event) => setEmail(event.target.value)} required type="email" value={email} />
+export default function LoginPage() {
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function action(formData: FormData) {
+    const res = await authenticate(undefined, formData);
+    if (res) {
+      setErrorMessage(res);
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-8">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="bg-primary text-primary-foreground p-2 rounded-xl group-hover:scale-105 transition-transform">
+              <Layers className="w-6 h-6" />
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-ink-700" htmlFor="password">
-                Mật khẩu
-              </label>
-              <Input
-                id="password"
-                minLength={6}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                type="password"
-                value={password}
-              />
-            </div>
-
-            {error ? <p className="rounded-md border border-danger-100 bg-danger-100 px-3 py-2 text-sm text-danger-700">{error}</p> : null}
-
-            <Button className="w-full" loading={loading} type="submit">
-              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-            </Button>
-          </form>
-
-          <p className="mt-5 text-sm text-ink-600">
-            Chưa có tài khoản?{" "}
-            <Link className="font-semibold text-brand-700" href="/register">
-              Đăng ký ngay
-            </Link>
-          </p>
+            <span className="font-bold text-2xl tracking-tight">VnSME<span className="text-primary">Match</span></span>
+          </Link>
         </div>
+
+        <Card className="shadow-xl bg-background/60 backdrop-blur-xl border-white/20 dark:border-white/10 rounded-3xl">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">Chào mừng trở lại</CardTitle>
+            <CardDescription>
+              Đăng nhập để tiếp tục với tài khoản của bạn
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={action}>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    placeholder="name@example.com" 
+                    required 
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Mật khẩu</Label>
+                    <Link href="#" className="text-sm font-medium text-primary hover:underline">
+                      Quên mật khẩu?
+                    </Link>
+                  </div>
+                  <Input 
+                    id="password" 
+                    name="password" 
+                    type="password" 
+                    required 
+                    autoComplete="current-password"
+                  />
+                </div>
+              </div>
+
+              {errorMessage && (
+                <div className="mt-4 p-3 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 text-sm rounded-lg">
+                  {errorMessage}
+                </div>
+              )}
+
+              <LoginButton />
+            </form>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4 text-center text-sm text-muted-foreground">
+            <div>
+              Chưa có tài khoản?{" "}
+              <Link href="/register" className="font-semibold text-primary hover:underline">
+                Đăng ký ngay
+              </Link>
+            </div>
+          </CardFooter>
+        </Card>
       </div>
-    </main>
+    </div>
   );
 }

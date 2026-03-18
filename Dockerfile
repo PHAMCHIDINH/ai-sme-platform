@@ -10,6 +10,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
+ENV AUTH_SECRET=generate-fallback-secret-for-build-123
 RUN npm run build
 
 FROM base AS runner

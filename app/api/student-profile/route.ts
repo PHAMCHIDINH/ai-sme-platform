@@ -1,127 +1,73 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-
-import { auth } from "@/auth";
-import { generateEmbedding } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
+import OpenAI from "openai";
+import { auth } from "@/auth";
 
-const schema = z.object({
-  university: z.string().min(2),
-  major: z.string().min(2),
-  skills: z.array(z.string()).default([]),
-  technologies: z.array(z.string()).default([]),
-  githubUrl: z.string().url().optional().or(z.literal("")),
-  portfolioUrl: z.string().url().optional().or(z.literal("")),
-  availability: z.string().min(2),
-  description: z.string().min(10),
-  interests: z.array(z.string()).default([]),
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "",
 });
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "STUDENT") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const profile = await prisma.studentProfile.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      applications: {
-        include: { project: true },
-      },
-    },
-  });
-
-  if (!profile) {
-    return NextResponse.json(null);
-  }
-
-  const completedProjects = profile.applications.filter(
-    (application) => application.project.status === "COMPLETED" && application.status === "ACCEPTED",
-  );
-
-  const evaluations = await prisma.evaluation.findMany({
-    where: {
-      type: "SME_TO_STUDENT",
-      evaluateeId: session.user.id,
-    },
-  });
-
-  const avgRating = evaluations.length
-    ? evaluations.reduce((sum, item) => sum + item.overallFit, 0) / evaluations.length
-    : 0;
-
-  return NextResponse.json({
-    ...profile,
-    completedProjectsCount: completedProjects.length,
-    avgRating,
-    completedProjects: completedProjects.map((application) => ({
-      id: application.project.id,
-      title: application.project.title,
-      deliverableUrl: null,
-    })),
-  });
-}
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user?.id || session.user.role !== "STUDENT") {
+    if (!session || session.user.role !== "STUDENT") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = await request.json();
-    const parsed = schema.safeParse(payload);
+    const body = await req.json();
+    const { university, major, skills, technologies, githubUrl, portfolioUrl, availability, description, interests } = body;
 
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    // Tách mảng
+    const skillsArray = typeof skills === "string" ? skills.split(",").map(s => s.trim()).filter(Boolean) : skills || [];
+    const techArray = typeof technologies === "string" ? technologies.split(",").map(s => s.trim()).filter(Boolean) : technologies || [];
+    const interestsArray = typeof interests === "string" ? interests.split(",").map(s => s.trim()).filter(Boolean) : interests || [];
+
+    let embedding: number[] = [];
+
+    // Tạo embedding để matching nếu có API Key
+    if (process.env.OPENAI_API_KEY) {
+      const textToEmbed = `Chuyên ngành: ${major}. Kỹ năng: ${skillsArray.join(", ")}. Công nghệ: ${techArray.join(", ")}. Lĩnh vực quan tâm: ${interestsArray.join(", ")}. Mô tả: ${description}`;
+      const embedResponse = await openai.embeddings.create({
+        model: "text-embedding-3-small",
+        input: textToEmbed,
+        dimensions: 1536,
+      });
+      embedding = embedResponse.data[0].embedding;
     }
 
-    const embeddingInput = [
-      parsed.data.skills.join(" "),
-      parsed.data.technologies.join(" "),
-      parsed.data.interests.join(" "),
-      parsed.data.description,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    const embedding = await generateEmbedding(embeddingInput);
-
+    // Upsert Student Profile
     const profile = await prisma.studentProfile.upsert({
       where: { userId: session.user.id },
       update: {
-        university: parsed.data.university,
-        major: parsed.data.major,
-        skills: parsed.data.skills,
-        technologies: parsed.data.technologies,
-        githubUrl: parsed.data.githubUrl || null,
-        portfolioUrl: parsed.data.portfolioUrl || null,
-        availability: parsed.data.availability,
-        description: parsed.data.description,
-        interests: parsed.data.interests,
-        embedding,
+        university,
+        major,
+        skills: skillsArray,
+        technologies: techArray,
+        githubUrl,
+        portfolioUrl,
+        availability,
+        description,
+        interests: interestsArray,
+        ...(embedding.length > 0 && { embedding }),
       },
       create: {
         userId: session.user.id,
-        university: parsed.data.university,
-        major: parsed.data.major,
-        skills: parsed.data.skills,
-        technologies: parsed.data.technologies,
-        githubUrl: parsed.data.githubUrl || null,
-        portfolioUrl: parsed.data.portfolioUrl || null,
-        availability: parsed.data.availability,
-        description: parsed.data.description,
-        interests: parsed.data.interests,
-        embedding,
-      },
+        university,
+        major,
+        skills: skillsArray,
+        technologies: techArray,
+        githubUrl,
+        portfolioUrl,
+        availability,
+        description,
+        interests: interestsArray,
+        embedding: embedding.length > 0 ? embedding : [],
+      }
     });
 
-    return NextResponse.json(profile);
+    return NextResponse.json({ success: true, profile });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to save profile", details: String(error) },
-      { status: 500 },
-    );
+    console.error("Update Student Profile Error:", error);
+    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
   }
 }

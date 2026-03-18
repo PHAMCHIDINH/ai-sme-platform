@@ -1,114 +1,103 @@
-import { Difficulty, ProjectStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { z } from "zod";
-
-import { auth } from "@/auth";
-import { generateEmbedding } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
+import OpenAI from "openai";
+import { auth } from "@/auth";
 
-const createProjectSchema = z.object({
-  title: z.string().min(3),
-  description: z.string().min(10),
-  standardizedBrief: z.string().optional(),
-  expectedOutput: z.string().min(3),
-  requiredSkills: z.array(z.string()).default([]),
-  difficulty: z.nativeEnum(Difficulty),
-  duration: z.string().min(2),
-  budget: z.string().optional(),
-  deadline: z.string().datetime().optional(),
-  status: z.nativeEnum(ProjectStatus).default(ProjectStatus.OPEN),
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "",
 });
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (session.user.role === "SME") {
-    const smeProfile = await prisma.sMEProfile.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    if (!smeProfile) {
-      return NextResponse.json([]);
-    }
-
-    const projects = await prisma.project.findMany({
-      where: { smeId: smeProfile.id },
-      include: { _count: { select: { applications: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return NextResponse.json(projects);
-  }
-
-  const projects = await prisma.project.findMany({
-    where: { status: "OPEN" },
-    orderBy: { createdAt: "desc" },
-  });
-
-  return NextResponse.json(projects);
-}
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session?.user?.id || session.user.role !== "SME") {
+    if (!session || session.user.role !== "SME") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = await request.json();
-    const parsed = createProjectSchema.safeParse(payload);
+    const body = await req.json();
+    const { title, description, standardizedBrief, expectedOutput, requiredSkills, difficulty, duration, budget } = body;
 
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    let embedding: number[] = [];
+
+    // Tách mảng kỹ năng
+    const skillsArray = typeof requiredSkills === "string" 
+      ? requiredSkills.split(",").map(s => s.trim()).filter(Boolean) 
+      : requiredSkills || [];
+
+    // Tạo embedding nếu có API key
+    if (process.env.OPENAI_API_KEY) {
+      const textToEmbed = `${title}. ${description}. Kỹ năng yêu cầu: ${skillsArray.join(", ")}`;
+      const embedResponse = await openai.embeddings.create({
+        model: "text-embedding-3-small",
+        input: textToEmbed,
+        dimensions: 1536,
+      });
+      embedding = embedResponse.data[0].embedding;
     }
 
-    const profile =
-      (await prisma.sMEProfile.findUnique({ where: { userId: session.user.id } })) ||
-      (await prisma.sMEProfile.create({
-        data: {
-          userId: session.user.id,
-          companyName: "SME Company",
-          industry: "General",
-          companySize: "1-10",
-          description: "SME profile auto-created",
-        },
-      }));
+    // Tìm SME profile ID
+    const smeProfile = await prisma.sMEProfile.findUnique({
+      where: { userId: session.user.id }
+    });
 
-    const embeddingText = [
-      parsed.data.title,
-      parsed.data.description,
-      parsed.data.requiredSkills.join(" "),
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    const embedding = await generateEmbedding(embeddingText);
+    if (!smeProfile) {
+      return NextResponse.json({ error: "SME Profile not found" }, { status: 404 });
+    }
 
     const project = await prisma.project.create({
       data: {
-        smeId: profile.id,
-        title: parsed.data.title,
-        description: parsed.data.description,
-        standardizedBrief: parsed.data.standardizedBrief,
-        expectedOutput: parsed.data.expectedOutput,
-        requiredSkills: parsed.data.requiredSkills,
-        difficulty: parsed.data.difficulty,
-        duration: parsed.data.duration,
-        budget: parsed.data.budget,
-        deadline: parsed.data.deadline ? new Date(parsed.data.deadline) : null,
-        status: parsed.data.status,
-        embedding,
-      },
+        smeId: smeProfile.id,
+        title,
+        description,
+        standardizedBrief: standardizedBrief || null,
+        expectedOutput,
+        requiredSkills: skillsArray,
+        difficulty,
+        duration,
+        budget: budget || null,
+        status: "OPEN",
+        embedding: embedding, // Lưu array float
+      }
     });
 
-    return NextResponse.json(project, { status: 201 });
+    return NextResponse.json({ project });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to create project", details: String(error) },
-      { status: 500 },
-    );
+    console.error("Create Project Error:", error);
+    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (session.user.role === "SME") {
+      const smeProfile = await prisma.sMEProfile.findUnique({
+        where: { userId: session.user.id }
+      });
+      if (!smeProfile) return NextResponse.json({ projects: [] });
+
+      const projects = await prisma.project.findMany({
+        where: { smeId: smeProfile.id },
+        orderBy: { createdAt: "desc" },
+        include: { _count: { select: { applications: true } } }
+      });
+      return NextResponse.json({ projects });
+    }
+    
+    // Nếu là STUDENT, sẽ gọi API GET /api/projects để lấy dự án gợi ý (trong api route khác, hoặc logic tại đây)
+    const projects = await prisma.project.findMany({
+      where: { status: "OPEN" },
+      orderBy: { createdAt: "desc" },
+      take: 20
+    });
+    return NextResponse.json({ projects });
+    
+  } catch (error) {
+    console.error("Get Projects Error:", error);
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }

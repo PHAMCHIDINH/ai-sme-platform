@@ -1,188 +1,184 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { z } from "zod";
-
-import { TagInput } from "@/components/forms/tag-input";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-
-const schema = z.object({
-  title: z.string().min(3),
-  description: z.string().min(10),
-  expectedOutput: z.string().min(3),
-  requiredSkills: z.array(z.string()),
-  difficulty: z.enum(["EASY", "MEDIUM", "HARD"]),
-  duration: z.string().min(2),
-  budget: z.string().optional(),
-});
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sparkles, Loader2, Info } from "lucide-react";
+import { toast } from "react-hot-toast"; // assuming user will add this later, or use simple alert for now
 
 export default function NewProjectPage() {
   const router = useRouter();
-  const [description, setDescription] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rawDescription, setRawDescription] = useState("");
   const [standardizedBrief, setStandardizedBrief] = useState("");
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleStandardize = async () => {
-    setLoadingAI(true);
-    setError("");
+  
+  const handleAiStandardize = async () => {
+    if (!rawDescription) return;
+    setIsAiLoading(true);
     try {
-      const response = await fetch("/api/ai/standardize-brief", {
+      const res = await fetch("/api/ai/standardize-brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawBrief: description }),
+        body: JSON.stringify({ description: rawDescription })
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? "AI request failed");
+      const data = await res.json();
+      if (data.brief) {
+        setStandardizedBrief(data.brief);
       }
-
-      setStandardizedBrief(data.standardizedBrief);
     } catch (e) {
-      setError(String(e));
+      console.error(e);
+      alert("Lỗi khi kết nối AI. Vui lòng thử lại.");
     } finally {
-      setLoadingAI(false);
+      setIsAiLoading(false);
     }
   };
 
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setError("");
-
-    const formData = new FormData(event.currentTarget);
-    const payload = {
-      title: String(formData.get("title") ?? ""),
-      description: String(formData.get("description") ?? ""),
-      standardizedBrief,
-      expectedOutput: String(formData.get("expectedOutput") ?? ""),
-      requiredSkills: String(formData.get("requiredSkills") ?? "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      difficulty: String(formData.get("difficulty") ?? "MEDIUM") as "EASY" | "MEDIUM" | "HARD",
-      duration: String(formData.get("duration") ?? ""),
-      budget: String(formData.get("budget") ?? ""),
-    };
-
-    const parsed = schema.safeParse(payload);
-    if (!parsed.success) {
-      setError("Dữ liệu chưa hợp lệ.");
-      setSubmitting(false);
-      return;
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const payload = Object.fromEntries(formData.entries());
+    payload.standardizedBrief = standardizedBrief;
+    
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        router.push("/sme/projects");
+      } else {
+        alert("Có lỗi khi đăng bài.");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const response = await fetch("/api/projects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(parsed.data),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.error ?? "Không thể tạo dự án");
-      setSubmitting(false);
-      return;
-    }
-
-    router.push("/sme/projects");
-    router.refresh();
   };
 
   return (
-    <div className="page-stack fade-in">
+    <div className="max-w-4xl mx-auto space-y-6">
       <div>
-        <h2 className="section-title">Tạo dự án mới</h2>
-        <p className="section-subtitle">Mô tả bài toán rõ ràng để hệ thống AI matching trả về danh sách ứng viên tốt hơn.</p>
+        <h2 className="text-2xl font-bold tracking-tight">Tạo Dự Án Mới</h2>
+        <p className="text-muted-foreground text-sm">Đăng yêu cầu số hóa để sinh viên IT ứng tuyển</p>
       </div>
 
-      <Card className="space-y-5" padding="lg">
-        <form className="space-y-4" onSubmit={onSubmit}>
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-ink-700" htmlFor="title">
-              Tên dự án
-            </label>
-            <Input id="title" name="title" required />
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+              <CardHeader>
+                <CardTitle>Mô tả bài toán</CardTitle>
+                <CardDescription>Mô tả chi tiết những gì bạn cần giải quyết</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Tên dự án</Label>
+                  <Input id="title" name="title" placeholder="VD: Chatbot FAQ cho Fanpage phòng khám" required />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="description">Mô tả thực tế (thô)</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleAiStandardize}
+                      disabled={isAiLoading || !rawDescription}
+                      className="h-8 text-xs font-medium text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 uppercase tracking-wider"
+                    >
+                      {isAiLoading ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Sparkles className="w-3 h-3 mr-2" />}
+                      AI Chuẩn hóa
+                    </Button>
+                  </div>
+                  <Textarea 
+                    id="description" 
+                    name="description"
+                    placeholder="VD: Mình đang bán mỹ phẩm, dạo này đông khách hỏi trùng câu trên page nên rep mỏi tay. Mình muốn có 1 con bot tự chat..."
+                    className="min-h-[120px]"
+                    value={rawDescription}
+                    onChange={(e) => setRawDescription(e.target.value)}
+                    required
+                  />
+                </div>
+
+                {standardizedBrief && (
+                  <div className="space-y-2 p-4 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/50 animate-in fade-in">
+                    <Label className="text-indigo-700 font-semibold flex items-center">
+                      <Sparkles className="w-4 h-4 mr-2" /> Brief Chuẩn Hóa Bằng AI
+                    </Label>
+                    <Textarea 
+                      name="standardizedBrief"
+                      value={standardizedBrief}
+                      onChange={(e) => setStandardizedBrief(e.target.value)}
+                      className="bg-transparent border-indigo-200 min-h-[150px] shadow-none"
+                    />
+                    <p className="text-xs text-indigo-500 flex items-center mt-2"><Info className="w-3 h-3 mr-1" /> Bạn có thể chỉnh sửa lại text này để chính xác hơn.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-ink-700" htmlFor="description">
-              Mô tả bài toán
-            </label>
-            <textarea
-              className="min-h-32 w-full rounded-md border border-ink-200 bg-white px-3 py-2.5 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-brand-200"
-              id="description"
-              name="description"
-              onChange={(event) => setDescription(event.target.value)}
-              required
-              value={description}
-            />
+          <div className="md:col-span-1 space-y-6">
+            <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+              <CardHeader>
+                <CardTitle>Cấu hình dự án</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="expectedOutput">Kết quả bàn giao</Label>
+                  <Input id="expectedOutput" name="expectedOutput" placeholder="VD: Website, Source code, Báo cáo" required />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="requiredSkills">Kỹ năng cần có</Label>
+                  <Input id="requiredSkills" name="requiredSkills" placeholder="VD: React, Node.js, AI (cách nhau dấu phẩy)" required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="difficulty">Mức độ khó</Label>
+                  <Select name="difficulty" defaultValue="MEDIUM">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn mức độ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EASY">Dễ (1-2 tuần)</SelectItem>
+                      <SelectItem value="MEDIUM">Vừa (2-4 tuần)</SelectItem>
+                      <SelectItem value="HARD">Khó (4-8 tuần)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Thời gian (chữ)</Label>
+                  <Input id="duration" name="duration" placeholder="VD: 3 tuần" required />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="budget">Ngân sách / Quyền lợi</Label>
+                  <Input id="budget" name="budget" placeholder="VD: 2.000.000 VNĐ hoặc Team building" />
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button type="submit" className="w-full rounded-xl shadow-lg" disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  Đăng Dự Án
+                </Button>
+              </CardFooter>
+            </Card>
           </div>
-
-          <Button disabled={!description.trim()} loading={loadingAI} onClick={handleStandardize} type="button" variant="secondary">
-            {loadingAI ? "Đang chuẩn hóa..." : "AI hỗ trợ chuẩn hóa brief"}
-          </Button>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-ink-700" htmlFor="standardizedBrief">
-              Brief đã chuẩn hóa
-            </label>
-            <textarea
-              className="min-h-32 w-full rounded-md border border-ink-200 bg-white px-3 py-2.5 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-brand-200"
-              id="standardizedBrief"
-              onChange={(event) => setStandardizedBrief(event.target.value)}
-              value={standardizedBrief}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-ink-700" htmlFor="expectedOutput">
-              Đầu ra mong muốn
-            </label>
-            <Input id="expectedOutput" name="expectedOutput" required />
-          </div>
-
-          <TagInput id="requiredSkills" label="Kỹ năng cần có" />
-
-          <div className="form-grid">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-ink-700" htmlFor="difficulty">
-                Mức độ khó
-              </label>
-              <Select defaultValue="MEDIUM" id="difficulty" name="difficulty">
-                <option value="EASY">Dễ</option>
-                <option value="MEDIUM">Trung bình</option>
-                <option value="HARD">Khó</option>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-ink-700" htmlFor="duration">
-                Thời gian dự kiến
-              </label>
-              <Input id="duration" name="duration" placeholder="4 tuần" required />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-ink-700" htmlFor="budget">
-              Ngân sách (tùy chọn)
-            </label>
-            <Input id="budget" name="budget" placeholder="5,000,000 VND" />
-          </div>
-
-          {error ? <p className="rounded-md border border-danger-100 bg-danger-100 px-3 py-2 text-sm text-danger-700">{error}</p> : null}
-
-          <Button loading={submitting} type="submit">
-            {submitting ? "Đang lưu..." : "Lưu dự án"}
-          </Button>
-        </form>
-      </Card>
+        </div>
+      </form>
     </div>
   );
 }

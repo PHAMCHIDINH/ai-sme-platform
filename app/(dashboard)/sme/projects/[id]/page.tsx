@@ -1,197 +1,147 @@
-import Link from "next/link";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-
 import { auth } from "@/auth";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, CheckCircle2, Clock, Users, ArrowRight } from "lucide-react";
 
-function formatProgressItem(item: unknown) {
-  if (!item || typeof item !== "object") {
-    return String(item ?? "");
-  }
-
-  const record = item as Record<string, unknown>;
-  if (typeof record.content === "string") {
-    return record.content;
-  }
-
-  return JSON.stringify(item);
-}
-
-const statusTone: Record<string, "neutral" | "info" | "success" | "warning" | "danger"> = {
-  OPEN: "info",
-  IN_PROGRESS: "warning",
-  SUBMITTED: "neutral",
-  COMPLETED: "success",
-  ACCEPTED: "success",
-  REJECTED: "danger",
-  PENDING: "warning",
-};
-
-async function markAsCompleted(formData: FormData) {
-  "use server";
-
+export default async function SMEProjectDetailPage({ params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "SME") {
-    return;
+  
+  if (!session || session.user.role !== "SME") {
+    return <div>Unauthorized</div>;
   }
 
-  const projectId = String(formData.get("projectId") ?? "");
-
-  await prisma.project.update({
-    where: { id: projectId },
-    data: { status: "COMPLETED" },
-  });
-
-  await prisma.projectProgress.updateMany({
-    where: { projectId },
-    data: { status: "COMPLETED" },
-  });
-
-  revalidatePath(`/sme/projects/${projectId}`);
-  revalidatePath(`/sme/projects/${projectId}/evaluate`);
-}
-
-export default async function SmeProjectDetailPage({ params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "SME") {
-    redirect("/login");
-  }
-
-  const profile = await prisma.sMEProfile.findUnique({ where: { userId: session.user.id } });
-  if (!profile) {
-    redirect("/sme/projects");
-  }
-
-  const project = await prisma.project.findFirst({
-    where: { id: params.id, smeId: profile.id },
+  const project = await prisma.project.findUnique({
+    where: { id: params.id },
     include: {
+      sme: true,
       applications: {
-        include: { student: { include: { user: true } } },
+        include: { student: { include: { user: true } } }
       },
-      progress: true,
-      evaluations: true,
-    },
+      progress: true
+    }
   });
 
-  if (!project) {
-    redirect("/sme/projects");
-  }
+  if (!project) return notFound();
 
-  const updates = Array.isArray(project.progress?.updates) ? project.progress?.updates : [];
-  const milestones = Array.isArray(project.progress?.milestones) ? project.progress?.milestones : [];
+  // Đảm bảo user này là chủ project
+  if (project.sme.userId !== session.user.id) {
+    return <div>Unauthorized access to this project</div>;
+  }
 
   return (
-    <div className="page-stack fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-8 pb-10">
+      <div className="flex items-center gap-4">
+        <Link href="/sme/projects">
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
         <div>
-          <h2 className="section-title">{project.title}</h2>
-          <p className="section-subtitle">Quản trị trạng thái dự án, ứng viên và bàn giao.</p>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold tracking-tight">{project.title}</h2>
+            <Badge variant={project.status === "OPEN" ? "default" : "secondary"}>{project.status}</Badge>
+          </div>
+          <p className="text-muted-foreground text-sm mt-1">
+            Đăng ngày: {new Date(project.createdAt).toLocaleDateString("vi-VN")}
+          </p>
         </div>
-        <Badge tone={statusTone[project.status] ?? "neutral"}>{project.status}</Badge>
       </div>
 
-      <Card className="space-y-4" padding="lg">
-        <p className="text-sm text-ink-700">{project.description}</p>
-        {project.standardizedBrief ? (
-          <div className="rounded-md border border-brand-100 bg-brand-50/70 p-3 text-sm text-ink-700 whitespace-pre-wrap">{project.standardizedBrief}</div>
-        ) : null}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+            <CardHeader>
+              <CardTitle>Nội dung dự án</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground mb-2">Mô tả bài toán</h4>
+                <div className="p-4 bg-muted/30 rounded-xl text-sm leading-relaxed whitespace-pre-wrap">
+                  {project.description}
+                </div>
+              </div>
+              
+              {project.standardizedBrief && (
+                <div>
+                  <h4 className="font-semibold text-sm text-indigo-600 dark:text-indigo-400 mb-2 flex items-center">
+                    <CheckCircle2 className="w-4 h-4 mr-1" /> Brief đã chuẩn hóa (Bằng AI)
+                  </h4>
+                  <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/30 text-sm leading-relaxed whitespace-pre-wrap">
+                    {project.standardizedBrief}
+                  </div>
+                </div>
+              )}
 
-        <div className="grid gap-2 text-sm text-ink-600 md:grid-cols-3">
-          <p>
-            <span className="font-semibold text-ink-900">Đầu ra:</span> {project.expectedOutput}
-          </p>
-          <p>
-            <span className="font-semibold text-ink-900">Thời gian:</span> {project.duration}
-          </p>
-          <p>
-            <span className="font-semibold text-ink-900">Ngân sách:</span> {project.budget ?? "Chưa đặt"}
-          </p>
-        </div>
-      </Card>
-
-      <Card className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-xl font-bold text-ink-900">Ứng viên</h3>
-          <Link href={`/sme/projects/${project.id}/candidates`}>
-            <Button size="sm" variant="secondary">
-              Xem matching
-            </Button>
-          </Link>
-        </div>
-
-        <div className="space-y-2 text-sm text-ink-600">
-          {project.applications.map((application) => (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-ink-100 bg-ink-50/40 px-3 py-2" key={application.id}>
-              <span className="font-semibold text-ink-900">{application.student.user.name}</span>
-              <Badge tone={statusTone[application.status] ?? "neutral"}>{application.status}</Badge>
-            </div>
-          ))}
-          {!project.applications.length ? <p className="text-ink-500">Chưa có ứng viên.</p> : null}
-        </div>
-      </Card>
-
-      <Card className="space-y-4">
-        <h3 className="text-xl font-bold text-ink-900">Tiến độ dự án</h3>
-
-        <div className="grid gap-2 text-sm text-ink-600 md:grid-cols-2">
-          <p>
-            <span className="font-semibold text-ink-900">Trạng thái:</span> {project.progress?.status ?? "NOT_STARTED"}
-          </p>
-          <p>
-            <span className="font-semibold text-ink-900">Deadline:</span>{" "}
-            {project.progress?.deadline ? new Date(project.progress.deadline).toLocaleDateString("vi-VN") : "Chưa đặt"}
-          </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/30 rounded-xl">
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider block mb-1">Mức độ khó</span>
+                  <span className="font-semibold">{project.difficulty === "EASY" ? "Dễ" : project.difficulty === "MEDIUM" ? "Trung bình" : "Khó"}</span>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-xl">
+                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider block mb-1">Thời gian dự kiến</span>
+                  <span className="font-semibold">{project.duration}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-ink-500">Milestones</h4>
-            <ul className="mt-2 space-y-1 text-sm text-ink-700">
-              {milestones.map((milestone, index) => (
-                <li className="rounded-md border border-ink-100 bg-white px-3 py-2" key={index}>
-                  {formatProgressItem(milestone)}
-                </li>
-              ))}
-              {!milestones.length ? <li className="text-ink-500">Chưa có milestone.</li> : null}
-            </ul>
-          </div>
+        <div className="lg:col-span-1 space-y-6">
+          <Card className="border-none shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 backdrop-blur border-blue-100 dark:border-blue-900/50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-blue-800 dark:text-blue-300">
+                <Users className="w-5 h-5 mr-2" />
+                Ứng viên & Matching
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-6">
+                <div className="text-4xl font-black text-blue-600 dark:text-blue-400 mb-2">
+                  {project.applications.length}
+                </div>
+                <p className="text-sm font-medium text-blue-800/70 dark:text-blue-300/70 mb-6">
+                  Sinh viên đã ứng tuyển
+                </p>
+                <Link href={`/sme/projects/${project.id}/candidates`}>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30">
+                    Xem ứng viên & Gợi ý AI <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <h4 className="text-sm font-semibold uppercase tracking-[0.12em] text-ink-500">Cập nhật</h4>
-            <ul className="mt-2 space-y-1 text-sm text-ink-700">
-              {updates.map((update, index) => (
-                <li className="rounded-md border border-ink-100 bg-white px-3 py-2" key={index}>
-                  {formatProgressItem(update)}
-                </li>
-              ))}
-              {!updates.length ? <li className="text-ink-500">Chưa có cập nhật.</li> : null}
-            </ul>
-          </div>
+          <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <Clock className="w-4 h-4 mr-2 text-muted-foreground" /> Tiến độ hiện tại
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {project.status === "OPEN" ? (
+                <div className="text-sm text-center text-muted-foreground py-4">
+                  Dự án đang mở, đợi chốt ứng viên.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Trạng thái</span>
+                    <Badge variant="secondary">{project.progress?.status || "Đang thực hiện"}</Badge>
+                  </div>
+                  {/* Có thể thêm UI progress line ở đây */}
+                  <Link href={`/sme/projects/${project.id}/progress`}>
+                    <Button variant="outline" className="w-full mt-2 text-xs h-8">Chi tiết tiến độ</Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-
-        {project.progress?.deliverableUrl ? (
-          <a className="inline-flex w-fit rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700" href={project.progress.deliverableUrl} rel="noreferrer" target="_blank">
-            Xem link bàn giao
-          </a>
-        ) : null}
-
-        {project.status === "SUBMITTED" ? (
-          <form action={markAsCompleted}>
-            <input name="projectId" type="hidden" value={project.id} />
-            <Button type="submit" variant="success">
-              Chấp nhận bàn giao (Completed)
-            </Button>
-          </form>
-        ) : null}
-      </Card>
-
-      <Link href={`/sme/projects/${project.id}/evaluate`}>
-        <Button variant="secondary">Đi đến trang đánh giá</Button>
-      </Link>
+      </div>
     </div>
   );
 }
