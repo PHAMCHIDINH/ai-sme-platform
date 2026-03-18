@@ -6,10 +6,17 @@ Nen tang AI ket noi sinh vien voi bai tap thuc chien tu doanh nghiep SME.
 
 ```bash
 npm install
+npm run db:up
+npm run db:push
 npm run dev
 ```
 
 Ung dung chay tai [http://localhost:3000](http://localhost:3000).
+
+Luu y:
+- Local dev van can PostgreSQL o `localhost:5432` (duoc chay boi `db` service).
+- Neu gap loi `Can't reach database server at localhost:5432`, chay lai `npm run db:up`.
+- Neu dang chay `next dev`, su dung `npm run db:push` (da `--skip-generate`) de tranh loi khoa file Prisma engine tren Windows.
 
 ## Trien khai bang Docker
 
@@ -23,7 +30,8 @@ cp .env.docker.example .env.docker
 
 Cap nhat gia tri:
 - `OPENAI_API_KEY`
-- `NEXTAUTH_SECRET`
+- `AUTH_SECRET`
+- `NEXTAUTH_SECRET` (nen dung cung gia tri voi `AUTH_SECRET` de tranh loi giai ma session JWT)
 
 ### 2) Build va chay
 
@@ -59,6 +67,8 @@ docker compose down -v
 ## Scripts nhanh
 
 ```bash
+npm run db:up
+npm run db:down
 npm run docker:up
 npm run docker:logs
 npm run docker:down

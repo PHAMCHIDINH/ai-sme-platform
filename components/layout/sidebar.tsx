@@ -34,7 +34,7 @@ function SidebarNav({ pathname, role, onNavigate }: { pathname: string; role: Si
           <Link
             className={cn(
               "block rounded-md px-3 py-2.5 text-sm font-semibold transition",
-              active ? "bg-brand-600 text-white shadow-card" : "text-ink-700 hover:bg-ink-50",
+              active ? "bg-brand-600 text-white shadow-card" : "text-foreground/80 hover:bg-accent hover:text-accent-foreground",
             )}
             href={item.href}
             key={item.href}
@@ -58,30 +58,30 @@ type SidebarProps = {
 export function Sidebar({ role, pathname, open, onClose }: SidebarProps) {
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-ink-100 bg-white/90 px-5 py-6 backdrop-blur lg:block">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 border-r border-border bg-background/90 px-5 py-6 backdrop-blur lg:block">
         <p className="kicker">AI SME Platform</p>
-        <h2 className="mt-4 text-2xl font-bold text-ink-900">Workspace</h2>
-        <p className="mt-1 text-sm text-ink-500">Vai trò: {role === "SME" ? "Doanh nghiệp" : "Sinh viên"}</p>
+        <h2 className="mt-4 text-2xl font-bold text-foreground">Workspace</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Vai trò: {role === "SME" ? "Doanh nghiệp" : "Sinh viên"}</p>
         <div className="mt-6">
           <SidebarNav pathname={pathname} role={role} />
         </div>
       </aside>
 
-      {open ? <button aria-label="Đóng điều hướng" className="fixed inset-0 z-30 bg-ink-900/50 lg:hidden" onClick={onClose} type="button" /> : null}
+      {open ? <button aria-label="Đóng điều hướng" className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={onClose} type="button" /> : null}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-72 border-r border-ink-100 bg-white px-5 py-6 transition-transform duration-200 lg:hidden",
+          "fixed inset-y-0 left-0 z-40 w-72 border-r border-border bg-background px-5 py-6 transition-transform duration-200 lg:hidden",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex items-center justify-between">
           <p className="kicker">AI SME Platform</p>
-          <button className="rounded-md p-1 text-ink-500 hover:bg-ink-50" onClick={onClose} type="button">
+          <button className="rounded-md p-1 text-muted-foreground transition hover:bg-accent hover:text-accent-foreground" onClick={onClose} type="button">
             Đóng
           </button>
         </div>
-        <h2 className="mt-4 text-xl font-bold text-ink-900">Điều hướng</h2>
-        <p className="mt-1 text-sm text-ink-500">{role === "SME" ? "Doanh nghiệp" : "Sinh viên"}</p>
+        <h2 className="mt-4 text-xl font-bold text-foreground">Điều hướng</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{role === "SME" ? "Doanh nghiệp" : "Sinh viên"}</p>
         <div className="mt-6">
           <SidebarNav onNavigate={onClose} pathname={pathname} role={role} />
         </div>

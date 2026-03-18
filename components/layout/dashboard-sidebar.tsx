@@ -1,17 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import {
   LayoutDashboard,
   FolderKanban,
   PlusCircle,
   UserCircle,
   Layers,
-  Settings,
   LogOut,
   Loader2,
 } from "lucide-react";
@@ -101,6 +101,7 @@ export function DashboardSidebar({ role, userName }: DashboardSidebarProps) {
       </div>
 
       <div className="p-4 border-t space-y-1">
+        <ThemeToggle className="w-full justify-start" showLabel />
         <Button
           variant="ghost"
           className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"

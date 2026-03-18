@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, Layers } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -42,6 +43,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link href="/login">
             <Button variant="ghost" className="hidden sm:flex rounded-full px-5">Đăng nhập</Button>
           </Link>

@@ -29,13 +29,13 @@ export function Modal({ open, title, onClose, children }: ModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-900/50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className={cn("w-full max-w-xl rounded-2xl border border-ink-100 bg-white p-6 shadow-soft")}
+        className={cn("w-full max-w-xl rounded-2xl border border-border bg-card/95 p-6 text-card-foreground shadow-soft backdrop-blur")}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-xl font-bold text-ink-900">{title}</h3>
+          <h3 className="text-xl font-bold text-foreground">{title}</h3>
           <Button onClick={onClose} size="sm" type="button" variant="ghost">
             Đóng
           </Button>

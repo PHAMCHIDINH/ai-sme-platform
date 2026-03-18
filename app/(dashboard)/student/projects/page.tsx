@@ -1,13 +1,11 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { rankBySimilarity } from "@/lib/matching";
 import { Building2, CalendarDays, Sparkles } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { vi } from "date-fns/locale";
+import { ApplyButton } from "./apply-button";
 
 export default async function StudentProjectsPage() {
   const session = await auth();
@@ -32,10 +30,11 @@ export default async function StudentProjectsPage() {
 
   // Xếp hạng bằng AI similarity nếu có profile embedding
   const availableProjects = allProjects.filter(p => !appliedProjectIds.has(p.id));
-  let rankedProjects = availableProjects as any[];
+  type RankedProject = (typeof allProjects)[number] & { matchScore: number };
+  let rankedProjects: RankedProject[] = [];
   
   if (profile?.embedding && profile.embedding.length > 0) {
-    rankedProjects = rankBySimilarity(profile.embedding, availableProjects);
+    rankedProjects = rankBySimilarity(profile.embedding, availableProjects) as RankedProject[];
   } else {
     // Nếu chưa có profile, gán score = 0
     rankedProjects = availableProjects.map(p => ({ ...p, matchScore: 0 }));
@@ -107,9 +106,7 @@ export default async function StudentProjectsPage() {
               </div>
             </CardContent>
             <CardFooter className="pt-0 pb-4 px-6 mt-auto flex gap-2">
-              <Button onClick={() => alert("Flow ứng tuyển chưa mockup api cụ thể")} className="flex-1 rounded-xl shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white">
-                Ứng tuyển ngay
-              </Button>
+              <ApplyButton matchScore={project.matchScore} projectId={project.id} />
             </CardFooter>
           </Card>
         ))}

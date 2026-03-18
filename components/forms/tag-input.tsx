@@ -23,11 +23,11 @@ export function TagInput({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-semibold text-ink-700" htmlFor={id}>
+      <label className="text-sm font-semibold text-foreground" htmlFor={id}>
         {label}
       </label>
       <Input defaultValue={defaultString} id={id} name={id} placeholder={placeholder ?? "React, Next.js, PostgreSQL"} type="text" />
-      <p className="text-xs text-ink-500">{helperText}</p>
+      <p className="text-xs text-muted-foreground">{helperText}</p>
     </div>
   );
 }

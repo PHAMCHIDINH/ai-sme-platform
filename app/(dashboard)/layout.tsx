@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { ReactNode } from "react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export default async function DashboardLayout({
   children,
@@ -14,8 +15,9 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const role = (session.user as any).role as "SME" | "STUDENT";
-  const userName = session.user.name || session.user.email || "Người dùng";
+  const user = session.user as { role?: "SME" | "STUDENT"; name?: string | null; email?: string | null };
+  const role = user.role === "SME" ? "SME" : "STUDENT";
+  const userName = user.name || user.email || "Người dùng";
 
   return (
     <div className="flex h-screen bg-background">
@@ -30,7 +32,10 @@ export default async function DashboardLayout({
           <span className="font-bold text-base">
             VnSME<span className="text-primary">Match</span>
           </span>
-          <div className="text-sm text-muted-foreground">{userName}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-muted-foreground">{userName}</div>
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto bg-muted/10 p-4 md:p-8">
