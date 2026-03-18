@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI SME Platform
 
-## Getting Started
+Nen tang AI ket noi sinh vien voi bai tap thuc chien tu doanh nghiep SME.
 
-First, run the development server:
+## Chay local (khong Docker)
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ung dung chay tai [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Trien khai bang Docker
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1) Chuan bi bien moi truong
 
-## Learn More
+Tao file `.env.docker` tu mau:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cp .env.docker.example .env.docker
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Cap nhat gia tri:
+- `OPENAI_API_KEY`
+- `NEXTAUTH_SECRET`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 2) Build va chay
 
-## Deploy on Vercel
+```bash
+docker compose --env-file .env.docker up --build -d
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Dich vu duoc tao:
+- `db`: PostgreSQL 16 (`localhost:5432`)
+- `app`: Next.js app (`http://localhost:3000`)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+App se tu dong chay `prisma db push` khi start de dong bo schema.
+
+### 3) Xem log
+
+```bash
+docker compose logs -f app
+docker compose logs -f db
+```
+
+### 4) Dung he thong
+
+```bash
+docker compose down
+```
+
+Neu muon xoa ca volume DB:
+
+```bash
+docker compose down -v
+```
+
+## Scripts nhanh
+
+```bash
+npm run docker:up
+npm run docker:logs
+npm run docker:down
+```
