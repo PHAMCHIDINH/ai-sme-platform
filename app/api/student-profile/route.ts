@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { canGenerateEmbedding, generateEmbedding } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
@@ -16,15 +17,48 @@ function joinList(value: string[]) {
   return value.join(", ");
 }
 
+function getStudentUserId(session: Awaited<ReturnType<typeof auth>>) {
+  if (!session || session.user.role !== "STUDENT" || !session.user.id) {
+    return null;
+  }
+
+  return session.user.id;
+}
+
+function handlePrismaError(error: unknown, action: "load" | "update") {
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return NextResponse.json(
+      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
+      { status: 503 },
+    );
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2022") {
+      return NextResponse.json(
+        { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
+        { status: 500 },
+      );
+    }
+  }
+
+  return NextResponse.json(
+    { error: action === "load" ? "Failed to load profile" : "Failed to update profile" },
+    { status: 500 },
+  );
+}
+
 export async function GET() {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "STUDENT") {
+    const userId = getStudentUserId(session);
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const profile = await prisma.studentProfile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId },
       select: {
         university: true,
         major: true,
@@ -57,14 +91,16 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Get Student Profile Error:", error);
-    return NextResponse.json({ error: "Failed to load profile" }, { status: 500 });
+    return handlePrismaError(error, "load");
   }
 }
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "STUDENT") {
+    const userId = getStudentUserId(session);
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -102,7 +138,7 @@ export async function POST(req: Request) {
     );
 
     const existingProfile = await prisma.studentProfile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId },
       select: {
         major: true,
         skills: true,
@@ -132,7 +168,7 @@ export async function POST(req: Request) {
 
     // Upsert Student Profile
     const profile = await prisma.studentProfile.upsert({
-      where: { userId: session.user.id },
+      where: { userId },
       update: {
         university,
         major,
@@ -146,7 +182,7 @@ export async function POST(req: Request) {
         ...(shouldRegenerateEmbedding ? { embedding } : {}),
       },
       create: {
-        userId: session.user.id,
+        userId,
         university,
         major,
         skills: skillsArray,
@@ -163,6 +199,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, profile });
   } catch (error) {
     console.error("Update Student Profile Error:", error);
-    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
+    return handlePrismaError(error, "update");
   }
 }
