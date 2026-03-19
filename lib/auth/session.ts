@@ -1,7 +1,8 @@
+import type { Session } from "next-auth";
 import type { auth } from "@/auth";
 
 export type AppRole = "SME" | "STUDENT";
-export type AuthSession = Awaited<ReturnType<typeof auth>>;
+export type AuthSession = Session | null;
 
 export function getSessionUserId(session: AuthSession) {
   const userId = session?.user?.id;
