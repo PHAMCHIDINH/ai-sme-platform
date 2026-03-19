@@ -3,7 +3,7 @@
 import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { hash } from "bcrypt";
+import { hash } from "bcryptjs";
 import { registerSchema } from "@/lib/validators/auth";
 
 export async function authenticate(
