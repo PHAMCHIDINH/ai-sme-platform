@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { auth } from "@/auth";
@@ -8,6 +9,27 @@ import { prisma } from "@/lib/prisma";
 const schema = z.object({
   projectId: z.string().cuid(),
 });
+
+function handlePrismaError(error: unknown, fallbackMessage: string) {
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return NextResponse.json(
+      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
+      { status: 503 },
+    );
+  }
+
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  ) {
+    return NextResponse.json(
+      { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+}
 
 export async function POST(request: Request) {
   try {
@@ -89,9 +111,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ projectId: project.id, candidates: ranked });
   } catch (error) {
     console.error("Matching API Error:", error);
-    return NextResponse.json(
-      { error: "Không thể lấy danh sách ứng viên lúc này." },
-      { status: 500 },
-    );
+    return handlePrismaError(error, "Không thể lấy danh sách ứng viên lúc này.");
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateEmbedding, canGenerateEmbedding } from "@/lib/openai";
@@ -17,10 +18,41 @@ function cosineSimilarity(A: number[], B: number[]) {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+function getSmeUserId(session: Awaited<ReturnType<typeof auth>>) {
+  if (!session?.user?.id || session.user.role !== "SME") {
+    return null;
+  }
+
+  return session.user.id;
+}
+
+function handlePrismaError(error: unknown, fallbackMessage: string) {
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return NextResponse.json(
+      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
+      { status: 503 },
+    );
+  }
+
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  ) {
+    return NextResponse.json(
+      { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+}
+
 export async function GET(req: Request) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "SME") {
+    const userId = getSmeUserId(session);
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -61,6 +93,6 @@ export async function GET(req: Request) {
     return NextResponse.json(scoredStudents);
   } catch (error) {
     console.error("[SME_STUDENTS_GET]", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return handlePrismaError(error, "Internal Server Error");
   }
 }

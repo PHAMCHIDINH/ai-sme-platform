@@ -1,13 +1,49 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
 import { generateEmbedding } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
 import { projectFormSchema } from "@/lib/validators/project";
 
+function getSessionUserId(session: Awaited<ReturnType<typeof auth>>, role?: "SME" | "STUDENT") {
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  if (role && session.user.role !== role) {
+    return null;
+  }
+
+  return session.user.id;
+}
+
+function handlePrismaError(error: unknown, fallbackMessage: string) {
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return NextResponse.json(
+      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
+      { status: 503 },
+    );
+  }
+
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  ) {
+    return NextResponse.json(
+      { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
+}
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "SME") {
+    const smeUserId = getSessionUserId(session, "SME");
+
+    if (!smeUserId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -39,7 +75,7 @@ export async function POST(req: Request) {
 
     // Tìm SME profile ID
     const smeProfile = await prisma.sMEProfile.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: smeUserId }
     });
 
     if (!smeProfile) {
@@ -69,20 +105,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ project });
   } catch (error) {
     console.error("Create Project Error:", error);
-    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+    return handlePrismaError(error, "Failed to create project");
   }
 }
 
 export async function GET() {
   try {
     const session = await auth();
-    if (!session) {
+    const userId = getSessionUserId(session);
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     if (session.user.role === "SME") {
       const smeProfile = await prisma.sMEProfile.findUnique({
-        where: { userId: session.user.id }
+        where: { userId }
       });
       if (!smeProfile) return NextResponse.json({ projects: [] });
 
@@ -104,6 +142,6 @@ export async function GET() {
     
   } catch (error) {
     console.error("Get Projects Error:", error);
-    return NextResponse.json({ error: "Server Error" }, { status: 500 });
+    return handlePrismaError(error, "Server Error");
   }
 }

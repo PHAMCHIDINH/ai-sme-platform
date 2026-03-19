@@ -7,15 +7,28 @@ import { prisma } from "@/lib/prisma";
 
 const DEFAULT_DEADLINE_MS = 30 * 24 * 60 * 60 * 1000;
 
+function getUserIdByRole(
+  session: Awaited<ReturnType<typeof auth>>,
+  role: "SME" | "STUDENT",
+) {
+  if (!session?.user?.id || session.user.role !== role) {
+    return null;
+  }
+
+  return session.user.id;
+}
+
 export async function applyProject(projectId: string, matchScore: number) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "STUDENT") {
+    const studentUserId = getUserIdByRole(session, "STUDENT");
+
+    if (!studentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
     const profile = await prisma.studentProfile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: studentUserId },
     });
 
     if (!profile) {
@@ -90,7 +103,9 @@ export async function updateCandidateStatus(
 ) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "SME") {
+    const smeUserId = getUserIdByRole(session, "SME");
+
+    if (!smeUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
@@ -103,7 +118,7 @@ export async function updateCandidateStatus(
       return { error: "Không tìm thấy dự án." };
     }
 
-    if (project.sme.userId !== session.user.id) {
+    if (project.sme.userId !== smeUserId) {
       return { error: "Bạn không sở hữu dự án này." };
     }
 
@@ -196,6 +211,7 @@ export async function updateCandidateStatus(
     revalidatePath("/student/my-projects");
     return { success: true as const };
   } catch (error) {
+    console.error("updateCandidateStatus error:", error);
     return { error: "Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại." };
   }
 }
@@ -203,7 +219,9 @@ export async function updateCandidateStatus(
 export async function inviteStudent(projectId: string, studentId: string) {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "SME") {
+    const smeUserId = getUserIdByRole(session, "SME");
+
+    if (!smeUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
@@ -212,7 +230,7 @@ export async function inviteStudent(projectId: string, studentId: string) {
       include: { sme: true },
     });
 
-    if (!project || project.sme.userId !== session.user.id) {
+    if (!project || project.sme.userId !== smeUserId) {
       return { error: "Dự án không tồn tại hoặc bạn không có quyền." };
     }
     if (project.status !== "OPEN") {
@@ -249,12 +267,14 @@ export async function inviteStudent(projectId: string, studentId: string) {
 export async function respondToInvitation(projectId: string, status: "ACCEPTED" | "REJECTED") {
   try {
     const session = await auth();
-    if (!session || session.user.role !== "STUDENT") {
+    const studentUserId = getUserIdByRole(session, "STUDENT");
+
+    if (!studentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
     const profile = await prisma.studentProfile.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: studentUserId },
     });
 
     if (!profile) {
@@ -328,4 +348,3 @@ export async function respondToInvitation(projectId: string, status: "ACCEPTED" 
     return { error: "Không thể phản hồi lúc này." };
   }
 }
-
