@@ -12,25 +12,43 @@ export default async function StudentProjectsPage() {
   if (!session || session.user.role !== "STUDENT") return <div>Unauthorized</div>;
 
   const profile = await prisma.studentProfile.findUnique({
-    where: { userId: session.user.id }
+    where: { userId: session.user.id },
+    select: {
+      id: true,
+      embedding: true,
+    },
   });
 
-  const allProjects = await prisma.project.findMany({
-    where: { status: "OPEN" },
-    include: { sme: true, applications: true }
+  const availableProjects = await prisma.project.findMany({
+    where: {
+      status: "OPEN",
+      ...(profile
+        ? {
+            applications: {
+              none: {
+                studentId: profile.id,
+              },
+            },
+          }
+        : {}),
+    },
+    select: {
+      id: true,
+      title: true,
+      expectedOutput: true,
+      requiredSkills: true,
+      duration: true,
+      embedding: true,
+      sme: {
+        select: {
+          companyName: true,
+        },
+      },
+    },
   });
-
-  // Lọc ra danh sách project sinh viên này ĐÃ ứng tuyển
-  const appliedProjectIds = new Set(
-    allProjects
-      .flatMap(p => p.applications)
-      .filter(a => a.studentId === profile?.id)
-      .map(a => a.projectId)
-  );
 
   // Xếp hạng bằng AI similarity nếu có profile embedding
-  const availableProjects = allProjects.filter(p => !appliedProjectIds.has(p.id));
-  type RankedProject = (typeof allProjects)[number] & { matchScore: number };
+  type RankedProject = (typeof availableProjects)[number] & { matchScore: number };
   let rankedProjects: RankedProject[] = [];
   
   if (profile?.embedding && profile.embedding.length > 0) {

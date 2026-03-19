@@ -10,19 +10,6 @@ export default auth((req) => {
   const session = req.auth;
   const role = session?.user?.role as string | undefined;
 
-  // Đã đăng nhập mà vào trang gốc hoặc trang login/register → redirect vào dashboard
-  const publicPaths = ["/", "/login", "/register"];
-  const isPublicPath = publicPaths.some(
-    (p) => pathname === p || pathname.startsWith(p + "?")
-  );
-  if (session && isPublicPath) {
-    if (role === "SME") {
-      return NextResponse.redirect(new URL("/sme/dashboard", req.url));
-    } else {
-      return NextResponse.redirect(new URL("/student/dashboard", req.url));
-    }
-  }
-
   // Chưa đăng nhập mà vào trang protected → redirect về login
   const isProtected =
     pathname.startsWith("/sme") || pathname.startsWith("/student");
@@ -43,9 +30,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/register",
     "/sme/:path*",
     "/student/:path*",
   ],

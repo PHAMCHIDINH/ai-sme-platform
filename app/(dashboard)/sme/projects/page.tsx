@@ -10,7 +10,7 @@ import { CalendarDays, PlusCircle, Users } from "lucide-react";
 
 export default async function SMEProjectsPage() {
   const session = await auth();
-  
+
   if (!session || session.user.role !== "SME") {
     return <div>Unauthorized</div>;
   }
@@ -58,9 +58,19 @@ export default async function SMEProjectsPage() {
                 <div className="flex justify-between items-start mb-2">
                   <Badge variant={
                     project.status === "OPEN" ? "default" :
-                    project.status === "IN_PROGRESS" ? "secondary" : "outline"
+                      project.status === "IN_PROGRESS" ? "secondary" :
+                        "outline"
+                  } className={
+                    project.status === "SUBMITTED" ? "border-amber-500 text-amber-600" :
+                      project.status === "COMPLETED" ? "border-green-500 text-green-600" :
+                        project.status === "DRAFT" ? "border-gray-400 text-gray-500" :
+                          undefined
                   }>
-                    {project.status === "OPEN" ? "Đang mở" : project.status === "IN_PROGRESS" ? "Đang tiến hành" : project.status}
+                    {project.status === "OPEN" ? "Đang mở" :
+                      project.status === "IN_PROGRESS" ? "Đang tiến hành" :
+                        project.status === "SUBMITTED" ? "Chờ nghiệm thu" :
+                          project.status === "COMPLETED" ? "Hoàn thành" :
+                            "Nháp"}
                   </Badge>
                   <span className="text-xs text-muted-foreground flex items-center">
                     <CalendarDays className="w-3 h-3 mr-1" />
@@ -85,7 +95,7 @@ export default async function SMEProjectsPage() {
                     <Badge variant="secondary" className="text-xs font-normal">+{project.requiredSkills.length - 3}</Badge>
                   )}
                 </div>
-                
+
                 <div className="flex items-center text-sm font-medium text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 w-fit px-3 py-1.5 rounded-lg">
                   <Users className="w-4 h-4 mr-2" />
                   {project._count.applications} Ứng viên

@@ -22,6 +22,7 @@ const routes = {
     { name: "Tổng quan", href: "/sme/dashboard", icon: LayoutDashboard },
     { name: "Dự án của tôi", href: "/sme/projects", icon: FolderKanban },
     { name: "Đăng dự án mới", href: "/sme/projects/new", icon: PlusCircle },
+    { name: "Hồ sơ doanh nghiệp", href: "/sme/profile", icon: UserCircle },
   ],
   STUDENT: [
     { name: "Tổng quan", href: "/student/dashboard", icon: LayoutDashboard },

@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
 import { auth } from "@/auth";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
-});
+import { generateEmbedding } from "@/lib/openai";
+import { prisma } from "@/lib/prisma";
+import { projectFormSchema } from "@/lib/validators/project";
 
 export async function POST(req: Request) {
   try {
@@ -15,25 +12,27 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, description, standardizedBrief, expectedOutput, requiredSkills, difficulty, duration, budget } = body;
+    const parsed = projectFormSchema.safeParse(body);
 
-    let embedding: number[] = [];
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const {
+      title,
+      description,
+      standardizedBrief,
+      expectedOutput,
+      requiredSkills,
+      difficulty,
+      duration,
+      budget,
+    } = parsed.data;
 
     // Tách mảng kỹ năng
     const skillsArray = typeof requiredSkills === "string" 
       ? requiredSkills.split(",").map(s => s.trim()).filter(Boolean) 
       : requiredSkills || [];
-
-    // Tạo embedding nếu có API key
-    if (process.env.OPENAI_API_KEY) {
-      const textToEmbed = `${title}. ${description}. Kỹ năng yêu cầu: ${skillsArray.join(", ")}`;
-      const embedResponse = await openai.embeddings.create({
-        model: "text-embedding-3-small",
-        input: textToEmbed,
-        dimensions: 1536,
-      });
-      embedding = embedResponse.data[0].embedding;
-    }
 
     // Tìm SME profile ID
     const smeProfile = await prisma.sMEProfile.findUnique({
@@ -43,6 +42,10 @@ export async function POST(req: Request) {
     if (!smeProfile) {
       return NextResponse.json({ error: "SME Profile not found" }, { status: 404 });
     }
+
+    const embedding = await generateEmbedding(
+      `${title}. ${description}. Kỹ năng yêu cầu: ${skillsArray.join(", ")}`,
+    );
 
     const project = await prisma.project.create({
       data: {
@@ -67,7 +70,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session) {

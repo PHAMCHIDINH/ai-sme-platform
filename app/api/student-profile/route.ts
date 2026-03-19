@@ -1,11 +1,65 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
 import { auth } from "@/auth";
+import { generateEmbedding } from "@/lib/openai";
+import { prisma } from "@/lib/prisma";
+import { studentProfileSchema } from "@/lib/validators/student-profile";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
-});
+function normalizeList(value: string[] | undefined) {
+  return (value ?? []).map((item) => item.trim()).filter(Boolean);
+}
+
+function listEquals(left: string[], right: string[]) {
+  return left.length === right.length && left.every((item, index) => item === right[index]);
+}
+
+function joinList(value: string[]) {
+  return value.join(", ");
+}
+
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session || session.user.role !== "STUDENT") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const profile = await prisma.studentProfile.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        university: true,
+        major: true,
+        skills: true,
+        technologies: true,
+        githubUrl: true,
+        portfolioUrl: true,
+        availability: true,
+        description: true,
+        interests: true,
+      },
+    });
+
+    if (!profile) {
+      return NextResponse.json({ profile: null });
+    }
+
+    return NextResponse.json({
+      profile: {
+        university: profile.university,
+        major: profile.major,
+        skills: joinList(profile.skills),
+        technologies: joinList(profile.technologies),
+        githubUrl: profile.githubUrl ?? "",
+        portfolioUrl: profile.portfolioUrl ?? "",
+        availability: profile.availability,
+        description: profile.description,
+        interests: joinList(profile.interests),
+      },
+    });
+  } catch (error) {
+    console.error("Get Student Profile Error:", error);
+    return NextResponse.json({ error: "Failed to load profile" }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -15,25 +69,63 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { university, major, skills, technologies, githubUrl, portfolioUrl, availability, description, interests } = body;
+    const parsed = studentProfileSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const {
+      university,
+      major,
+      skills,
+      technologies,
+      githubUrl,
+      portfolioUrl,
+      availability,
+      description,
+      interests,
+    } = parsed.data;
 
     // Tách mảng
-    const skillsArray = typeof skills === "string" ? skills.split(",").map(s => s.trim()).filter(Boolean) : skills || [];
-    const techArray = typeof technologies === "string" ? technologies.split(",").map(s => s.trim()).filter(Boolean) : technologies || [];
-    const interestsArray = typeof interests === "string" ? interests.split(",").map(s => s.trim()).filter(Boolean) : interests || [];
+    const skillsArray = normalizeList(
+      skills.split(","),
+    );
+    const techArray = normalizeList(
+      technologies.split(","),
+    );
+    const interestsArray = normalizeList(
+      interests.split(","),
+    );
 
-    let embedding: number[] = [];
+    const existingProfile = await prisma.studentProfile.findUnique({
+      where: { userId: session.user.id },
+      select: {
+        major: true,
+        skills: true,
+        technologies: true,
+        interests: true,
+        description: true,
+        embedding: true,
+      },
+    });
 
-    // Tạo embedding để matching nếu có API Key
-    if (process.env.OPENAI_API_KEY) {
-      const textToEmbed = `Chuyên ngành: ${major}. Kỹ năng: ${skillsArray.join(", ")}. Công nghệ: ${techArray.join(", ")}. Lĩnh vực quan tâm: ${interestsArray.join(", ")}. Mô tả: ${description}`;
-      const embedResponse = await openai.embeddings.create({
-        model: "text-embedding-3-small",
-        input: textToEmbed,
-        dimensions: 1536,
-      });
-      embedding = embedResponse.data[0].embedding;
-    }
+    const shouldRegenerateEmbedding =
+      Boolean(process.env.OPENAI_API_KEY) &&
+      (
+        !existingProfile ||
+        existingProfile.major !== major ||
+        existingProfile.description !== description ||
+        !listEquals(existingProfile.skills, skillsArray) ||
+        !listEquals(existingProfile.technologies, techArray) ||
+        !listEquals(existingProfile.interests, interestsArray)
+      );
+
+    const embedding = shouldRegenerateEmbedding
+      ? await generateEmbedding(
+          `Chuyên ngành: ${major}. Kỹ năng: ${skillsArray.join(", ")}. Công nghệ: ${techArray.join(", ")}. Lĩnh vực quan tâm: ${interestsArray.join(", ")}. Mô tả: ${description}`,
+        )
+      : existingProfile?.embedding ?? [];
 
     // Upsert Student Profile
     const profile = await prisma.studentProfile.upsert({
@@ -48,7 +140,7 @@ export async function POST(req: Request) {
         availability,
         description,
         interests: interestsArray,
-        ...(embedding.length > 0 && { embedding }),
+        ...(shouldRegenerateEmbedding ? { embedding } : {}),
       },
       create: {
         userId: session.user.id,
@@ -61,7 +153,7 @@ export async function POST(req: Request) {
         availability,
         description,
         interests: interestsArray,
-        embedding: embedding.length > 0 ? embedding : [],
+        embedding,
       }
     });
 

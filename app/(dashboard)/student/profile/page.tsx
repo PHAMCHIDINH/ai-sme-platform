@@ -1,41 +1,159 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { Loader2, Save, GraduationCap, Code2, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "react-hot-toast";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save, GraduationCap, Code2, Sparkles } from "lucide-react";
+import {
+  studentProfileSchema,
+  type StudentProfileInput,
+} from "@/lib/validators/student-profile";
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) {
+    return null;
+  }
+
+  return <p className="text-sm text-destructive">{message}</p>;
+}
+
+function getErrorMessage(payload: unknown, fallback: string) {
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "error" in payload &&
+    typeof payload.error === "string"
+  ) {
+    return payload.error;
+  }
+
+  return fallback;
+}
 
 export default function StudentProfilePage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Thông thường sẽ load profile từ server, ở đây chỉ render form MVP
-  
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    const payload = Object.fromEntries(formData.entries());
-    
-    try {
-      const res = await fetch("/api/student-profile", {
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<StudentProfileInput>({
+    resolver: zodResolver(studentProfileSchema),
+    defaultValues: {
+      university: "",
+      major: "",
+      description: "",
+      skills: "",
+      technologies: "",
+      interests: "",
+      githubUrl: "",
+      portfolioUrl: "",
+      availability: "",
+    },
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadProfile() {
+      try {
+        const response = await fetch("/api/student-profile", { method: "GET" });
+        const payload = (await response.json()) as unknown;
+
+        if (!response.ok) {
+          throw new Error(getErrorMessage(payload, "Không thể tải hồ sơ hiện tại."));
+        }
+
+        if (
+          typeof payload === "object" &&
+          payload !== null &&
+          "profile" in payload &&
+          typeof payload.profile === "object" &&
+          payload.profile !== null
+        ) {
+          reset(payload.profile as StudentProfileInput);
+        }
+      } catch (error) {
+        if (active) {
+          toast.error(error instanceof Error ? error.message : "Không thể tải hồ sơ hiện tại.");
+        }
+      } finally {
+        if (active) {
+          setIsInitialLoading(false);
+        }
+      }
+    }
+
+    loadProfile();
+    return () => {
+      active = false;
+    };
+  }, [reset]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (values: StudentProfileInput) => {
+      const response = await fetch("/api/student-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(values),
       });
-      if (res.ok) {
-        alert("Cập nhật hồ sơ thành công! AI đã tạo embedding để matching.");
-      } else {
-        alert("Lỗi cập nhật hồ sơ.");
+
+      const payload = (await response.json()) as unknown;
+
+      if (!response.ok) {
+        throw new Error(getErrorMessage(payload, "Lỗi cập nhật hồ sơ."));
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
+      return payload;
+    },
+    onSuccess: () => {
+      toast.success("Cập nhật hồ sơ thành công.");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Lỗi cập nhật hồ sơ.");
+    },
+  });
+
+  const onSubmit = handleSubmit((values) => {
+    updateProfileMutation.mutate(values);
+  });
+
+  if (isInitialLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 pb-10">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-72" />
+          <Skeleton className="h-5 w-full max-w-2xl" />
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <Skeleton className="h-72 w-full rounded-2xl" />
+            <Skeleton className="h-72 w-full rounded-2xl" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-96 w-full rounded-2xl" />
+            <Skeleton className="h-40 w-full rounded-2xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
@@ -47,7 +165,7 @@ export default function StudentProfilePage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={onSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
@@ -61,23 +179,25 @@ export default function StudentProfilePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="university">Trường học / Cơ sở đào tạo</Label>
-                    <Input id="university" name="university" placeholder="VD: Đại học Bách Khoa" defaultValue="Đại học RMIT" required />
+                    <Input id="university" {...register("university")} />
+                    <FieldError message={errors.university?.message} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="major">Chuyên ngành</Label>
-                    <Input id="major" name="major" placeholder="VD: Kỹ thuật phần mềm" defaultValue="Khoa học máy tính" required />
+                    <Input id="major" {...register("major")} />
+                    <FieldError message={errors.major?.message} />
                   </div>
                 </div>
 
                 <div className="space-y-2 mt-4">
                   <Label htmlFor="description">Giới thiệu bản thân (Mục tiêu nghề nghiệp)</Label>
-                  <Textarea 
-                    id="description" 
-                    name="description" 
-                    placeholder="Hãy kể ngắn gọn điểm mạnh và định hướng học hỏi của bạn để Doanh nghiệp và AI hiểu bạn hơn."
+                  <Textarea
                     className="min-h-[100px]"
-                    defaultValue="Mình đang tìm kiếm các cơ hội thực hành thực tế liên quan đến Web Development và áp dụng Machine Learning vào sản phẩm thực."
+                    id="description"
+                    placeholder="Hãy kể ngắn gọn điểm mạnh và định hướng học hỏi của bạn để Doanh nghiệp và AI hiểu bạn hơn."
+                    {...register("description")}
                   />
+                  <FieldError message={errors.description?.message} />
                 </div>
               </CardContent>
             </Card>
@@ -92,15 +212,18 @@ export default function StudentProfilePage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="skills">Kỹ năng chuyên môn (cách nhau dấu phẩy)</Label>
-                  <Input id="skills" name="skills" placeholder="VD: Front-end, Back-end, UI/UX, Data Analysis" defaultValue="Fullstack Web, API Design" required />
+                  <Input id="skills" {...register("skills")} />
+                  <FieldError message={errors.skills?.message} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="technologies">Công nghệ / Công cụ (cách nhau dấu phẩy)</Label>
-                  <Input id="technologies" name="technologies" placeholder="VD: React, Node.js, Python, Figma" defaultValue="React, Next.js, TypeScript, PostgreSQL" required />
+                  <Input id="technologies" {...register("technologies")} />
+                  <FieldError message={errors.technologies?.message} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="interests">Lĩnh vực mong muốn trải nghiệm</Label>
-                  <Input id="interests" name="interests" placeholder="VD: E-commerce, EdTech, Healthcare" defaultValue="SaaS, E-commerce" />
+                  <Input id="interests" {...register("interests")} />
+                  <FieldError message={errors.interests?.message} />
                 </div>
               </CardContent>
             </Card>
@@ -114,20 +237,31 @@ export default function StudentProfilePage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="githubUrl">GitHub URL</Label>
-                  <Input id="githubUrl" name="githubUrl" type="url" placeholder="https://github.com/..." defaultValue="https://github.com/example" />
+                  <Input id="githubUrl" type="url" {...register("githubUrl")} />
+                  <FieldError message={errors.githubUrl?.message} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="portfolioUrl">Portfolio / LinkedIn URL</Label>
-                  <Input id="portfolioUrl" name="portfolioUrl" type="url" placeholder="https://linkedin.com/..." />
+                  <Input id="portfolioUrl" type="url" {...register("portfolioUrl")} />
+                  <FieldError message={errors.portfolioUrl?.message} />
                 </div>
                 <div className="space-y-2 pt-4">
                   <Label htmlFor="availability">Khả năng đáp ứng thời gian</Label>
-                  <Input id="availability" name="availability" placeholder="VD: 20h/tuần, các buổi tối" defaultValue="Sẵn sàng 15h/tuần" required />
+                  <Input id="availability" {...register("availability")} />
+                  <FieldError message={errors.availability?.message} />
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full shadow-lg h-12 rounded-xl" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
+                <Button
+                  className="w-full shadow-lg h-12 rounded-xl"
+                  disabled={updateProfileMutation.isPending}
+                  type="submit"
+                >
+                  {updateProfileMutation.isPending ? (
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-5 h-5 mr-2" />
+                  )}
                   Lưu hồ sơ AI Profile
                 </Button>
               </CardFooter>

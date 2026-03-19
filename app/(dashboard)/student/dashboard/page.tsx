@@ -11,24 +11,37 @@ export default async function StudentDashboardPage() {
 
   const profile = await prisma.studentProfile.findUnique({
     where: { userId: session.user.id },
-    include: {
-      applications: true,
+    select: {
+      skills: true,
+      _count: {
+        select: {
+          applications: true,
+        },
+      },
       progressEntries: {
-        include: { project: true }
-      }
-    }
+        select: {
+          status: true,
+        },
+      },
+    },
   });
 
   const activeProjects = profile?.progressEntries.filter(p => p.status !== "COMPLETED").length || 0;
   const completedProjects = profile?.progressEntries.filter(p => p.status === "COMPLETED").length || 0;
   
   // Tổng rating
-  const evaluations = await prisma.evaluation.findMany({
-    where: { evaluateeId: session.user.id, type: "SME_TO_STUDENT" }
+  const evaluationSummary = await prisma.evaluation.aggregate({
+    where: { evaluateeId: session.user.id, type: "SME_TO_STUDENT" },
+    _avg: {
+      overallFit: true,
+    },
+    _count: {
+      overallFit: true,
+    },
   });
   
-  const avgRating = evaluations.length > 0 
-    ? (evaluations.reduce((sum, e) => sum + e.overallFit, 0) / evaluations.length).toFixed(1)
+  const avgRating = evaluationSummary._count.overallFit > 0 && evaluationSummary._avg.overallFit !== null
+    ? evaluationSummary._avg.overallFit.toFixed(1)
     : "Chưa có";
 
   return (
@@ -57,7 +70,7 @@ export default async function StudentDashboardPage() {
             <FolderKanban className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{profile?.applications.length || 0}</div>
+            <div className="text-2xl font-bold">{profile?._count.applications || 0}</div>
           </CardContent>
         </Card>
 

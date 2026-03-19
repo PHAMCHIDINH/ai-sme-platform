@@ -69,7 +69,33 @@ docker compose down -v
 ```bash
 npm run db:up
 npm run db:down
+npm run analyze
 npm run docker:up
 npm run docker:logs
 npm run docker:down
 ```
+
+## Frontend libraries
+
+Du an da tich hop them:
+- `react-hook-form`
+- `@hookform/resolvers`
+- `@tanstack/react-query`
+- `@next/bundle-analyzer`
+
+Quy uoc:
+- Dung `react-hook-form` + `zodResolver` cho cac form client co nhieu field va validation.
+- Dung `@tanstack/react-query` cho client-owned fetch/mutation nhu submit form qua API route.
+- Giu server component data fetching o server.
+- Giu server actions cho cac thao tac da on dinh, khong ep chuyen het sang React Query.
+
+## Phan tich bundle
+
+```bash
+npm run analyze
+```
+
+Lenh nay se build app voi bundle analyzer de xem package/chunk nao dang chiem nhieu dung luong.
+
+Tai lieu chi tiet:
+- `docs/frontend-libraries.md`

@@ -1,105 +1,224 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Star } from "lucide-react";
+import { revalidatePath } from "next/cache";
+import { notFound, redirect } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
-export default function EvaluatePage({ params }: { params: { id: string } }) {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [ratings, setRatings] = useState({
-    outputQuality: 0,
-    onTime: 0,
-    proactiveness: 0,
-    communication: 0,
-    overallFit: 0,
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EvaluateForm } from "./evaluate-form";
+
+type EvaluationActionResult = {
+  error?: string;
+};
+
+function parseRating(value: FormDataEntryValue | null): number | null {
+  const rating = Number(value);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return null;
+  }
+  return rating;
+}
+
+function formatCreatedAt(value: Date) {
+  return new Date(value).toLocaleString("vi-VN");
+}
+
+export default async function EvaluatePage({ params }: { params: { id: string } }) {
+  const session = await auth();
+
+  if (!session || session.user.role !== "SME") {
+    return <div>Unauthorized</div>;
+  }
+
+  const project = await prisma.project.findUnique({
+    where: { id: params.id },
+    include: {
+      sme: true,
+      progress: {
+        include: {
+          student: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      evaluations: {
+        where: { type: "SME_TO_STUDENT" },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
   });
 
-  const handleRating = (field: keyof typeof ratings, i: number) => {
-    setRatings(prev => ({ ...prev, [field]: i }));
-  };
+  if (!project) {
+    return notFound();
+  }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    // TODO: Connect to real API
-    setTimeout(() => {
-      setIsSubmitting(false);
-      alert("Đánh giá thành công!");
-      router.push(`/sme/projects/${params.id}`);
-    }, 1500);
-  };
+  if (project.sme.userId !== session.user.id) {
+    return <div>Unauthorized access to this project</div>;
+  }
 
-  const criteria = [
-    { key: "outputQuality", label: "Chất lượng sản phẩm đầu ra" },
-    { key: "onTime", label: "Đúng tiến độ / Deadline" },
-    { key: "proactiveness", label: "Mức độ chủ động trong công việc" },
-    { key: "communication", label: "Kỹ năng giao tiếp & Phản hồi" },
-    { key: "overallFit", label: "Mức độ phù hợp với yêu cầu thực tế" },
-  ];
+  if (project.status !== "COMPLETED") {
+    redirect(`/sme/projects/${project.id}`);
+  }
+
+  if (!project.progress?.student) {
+    redirect(`/sme/projects/${project.id}`);
+  }
+
+  async function submitEvaluation(formData: FormData): Promise<EvaluationActionResult> {
+    "use server";
+
+    const activeSession = await auth();
+    if (!activeSession || activeSession.user.role !== "SME") {
+      return { error: "Bạn không có quyền thực hiện thao tác này." };
+    }
+
+    const ownedProject = await prisma.project.findUnique({
+      where: { id: params.id },
+      include: {
+        sme: true,
+        progress: {
+          include: {
+            student: true,
+          },
+        },
+        evaluations: {
+          where: { type: "SME_TO_STUDENT" },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!ownedProject || ownedProject.sme.userId !== activeSession.user.id) {
+      return { error: "Bạn không có quyền đánh giá dự án này." };
+    }
+
+    if (
+      ownedProject.status !== "COMPLETED" ||
+      !ownedProject.progress ||
+      ownedProject.evaluations.length > 0
+    ) {
+      return { error: "Không thể gửi đánh giá cho dự án này." };
+    }
+
+    const outputQuality = parseRating(formData.get("outputQuality"));
+    const onTime = parseRating(formData.get("onTime"));
+    const proactiveness = parseRating(formData.get("proactiveness"));
+    const communication = parseRating(formData.get("communication"));
+    const overallFit = parseRating(formData.get("overallFit"));
+
+    if (
+      outputQuality === null ||
+      onTime === null ||
+      proactiveness === null ||
+      communication === null ||
+      overallFit === null
+    ) {
+      return { error: "Vui lòng chọn điểm 1-5 cho tất cả tiêu chí." };
+    }
+
+    const comment = String(formData.get("comment") ?? "").trim();
+
+    await prisma.evaluation.create({
+      data: {
+        projectId: ownedProject.id,
+        evaluatorId: activeSession.user.id,
+        evaluateeId: ownedProject.progress.student.userId,
+        type: "SME_TO_STUDENT",
+        outputQuality,
+        onTime,
+        proactiveness,
+        communication,
+        overallFit,
+        comment: comment || null,
+      },
+    });
+
+    revalidatePath(`/sme/projects/${ownedProject.id}/evaluate`);
+    revalidatePath(`/sme/projects/${ownedProject.id}`);
+    revalidatePath("/sme/projects");
+    revalidatePath("/student/my-projects");
+    revalidatePath("/student/dashboard");
+    redirect(`/sme/projects/${ownedProject.id}`);
+  }
+
+  const existingEvaluation = project.evaluations[0] ?? null;
+  const studentName = project.progress.student.user.name;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-10">
+    <div className="mx-auto max-w-2xl space-y-6 pb-10">
       <div className="flex items-center gap-4">
         <Link href={`/sme/projects/${params.id}`}>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <ArrowLeft className="w-5 h-5" />
+          <Button className="rounded-full" size="icon" variant="ghost">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Đánh giá sinh viên</h2>
-          <p className="text-muted-foreground text-sm">Feedback sau khi nghiệm thu dự án</p>
+          <p className="text-sm text-muted-foreground">
+            Dự án: {project.title} · Sinh viên: {studentName}
+          </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+      {existingEvaluation ? (
+        <Card className="border-none bg-white/50 shadow-sm backdrop-blur dark:bg-slate-900/50">
           <CardHeader>
-            <CardTitle>Tiêu chí đánh giá</CardTitle>
-            <CardDescription>Chọn từ 1 đến 5 sao cho mỗi hạng mục</CardDescription>
+            <CardTitle>Bạn đã gửi đánh giá cho sinh viên này</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Thời gian gửi: {formatCreatedAt(existingEvaluation.createdAt)}
+            </p>
           </CardHeader>
-          <CardContent className="space-y-6">
-            
-            {criteria.map((item) => (
-              <div key={item.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                <span className="font-medium text-sm">{item.label}</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <Star 
-                      key={i} 
-                      className={`w-6 h-6 cursor-pointer transition-colors ${
-                        i <= ratings[item.key as keyof typeof ratings] 
-                          ? "fill-amber-400 text-amber-400" 
-                          : "text-muted-foreground/30 hover:text-amber-200"
-                      }`}
-                      onClick={() => handleRating(item.key as keyof typeof ratings, i)}
-                    />
-                  ))}
-                </div>
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border bg-background/60 p-3">
+                Chất lượng đầu ra:{" "}
+                <strong>{existingEvaluation.outputQuality}/5</strong>
               </div>
-            ))}
-
-            <div className="pt-4 border-t space-y-3">
-              <label className="font-medium text-sm block">Nhận xét chi tiết (Tùy chọn)</label>
-              <Textarea 
-                placeholder="Bạn có đánh giá gì thêm về thái độ làm việc, kỹ năng của sinh viên không?" 
-                className="min-h-[100px]"
-              />
+              <div className="rounded-xl border bg-background/60 p-3">
+                Đúng tiến độ: <strong>{existingEvaluation.onTime}/5</strong>
+              </div>
+              <div className="rounded-xl border bg-background/60 p-3">
+                Chủ động: <strong>{existingEvaluation.proactiveness}/5</strong>
+              </div>
+              <div className="rounded-xl border bg-background/60 p-3">
+                Giao tiếp: <strong>{existingEvaluation.communication}/5</strong>
+              </div>
+              <div className="rounded-xl border bg-background/60 p-3 sm:col-span-2">
+                Tổng thể: <strong>{existingEvaluation.overallFit}/5</strong>
+              </div>
             </div>
-            
+
+            {existingEvaluation.comment ? (
+              <div className="rounded-xl border bg-background/60 p-4">
+                <p className="mb-1 font-medium">Nhận xét</p>
+                <p className="whitespace-pre-wrap text-muted-foreground">
+                  {existingEvaluation.comment}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl border bg-background/60 p-4 text-muted-foreground">
+                Không có nhận xét bổ sung.
+              </div>
+            )}
           </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={isSubmitting || Object.values(ratings).some(v => v === 0)}>
-              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              Gửi đánh giá
-            </Button>
-          </CardFooter>
         </Card>
-      </form>
+      ) : (
+        <EvaluateForm
+          studentName={studentName}
+          submitAction={submitEvaluation}
+        />
+      )}
     </div>
   );
 }

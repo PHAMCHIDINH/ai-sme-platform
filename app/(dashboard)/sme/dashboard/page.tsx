@@ -1,9 +1,111 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FolderKanban, Users, Clock, PlusCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { ProjectStatus } from "@prisma/client";
+import { FolderKanban, Users, Clock, PlusCircle, Building2 } from "lucide-react";
 
-export default function SMEDashboardPage() {
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+function projectStatusLabel(status: ProjectStatus) {
+  switch (status) {
+    case "OPEN":
+      return "Đang mở";
+    case "IN_PROGRESS":
+      return "Đang tiến hành";
+    case "SUBMITTED":
+      return "Chờ nghiệm thu";
+    case "COMPLETED":
+      return "Hoàn thành";
+    default:
+      return "Nháp";
+  }
+}
+
+function projectStatusClass(status: ProjectStatus) {
+  if (status === "COMPLETED") return "border-green-500 text-green-600";
+  if (status === "SUBMITTED") return "border-amber-500 text-amber-600";
+  if (status === "IN_PROGRESS") return "border-blue-500 text-blue-600";
+  if (status === "OPEN") return "border-indigo-500 text-indigo-600";
+  return "border-gray-400 text-gray-500";
+}
+
+export default async function SMEDashboardPage() {
+  const session = await auth();
+  if (!session || session.user.role !== "SME") {
+    return <div>Unauthorized</div>;
+  }
+
+  const smeProfile = await prisma.sMEProfile.findUnique({
+    where: { userId: session.user.id },
+    select: {
+      id: true,
+      companyName: true,
+      _count: {
+        select: {
+          projects: true,
+        },
+      },
+    },
+  });
+
+  if (!smeProfile) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Tổng quan Doanh nghiệp</h2>
+          <p className="text-muted-foreground text-sm">
+            Quản lý hiệu quả các bài toán chuyển đổi số của bạn
+          </p>
+        </div>
+
+        <Card className="border-dashed bg-muted/20">
+          <CardContent className="flex flex-col items-center justify-center gap-4 p-10 text-center">
+            <Building2 className="h-12 w-12 text-muted-foreground/60" />
+            <div className="space-y-1">
+              <p className="text-lg font-semibold">Bạn chưa tạo hồ sơ doanh nghiệp</p>
+              <p className="text-sm text-muted-foreground">
+                Cập nhật thông tin công ty để bắt đầu đăng dự án và nhận ứng viên.
+              </p>
+            </div>
+            <Link href="/sme/profile">
+              <Button>Tạo hồ sơ doanh nghiệp</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const [activeProjects, totalApplicants, recentProjects] = await Promise.all([
+    prisma.project.count({
+      where: {
+        smeId: smeProfile.id,
+        status: { in: ["IN_PROGRESS", "SUBMITTED"] },
+      },
+    }),
+    prisma.application.count({
+      where: {
+        project: { smeId: smeProfile.id },
+      },
+    }),
+    prisma.project.findMany({
+      where: { smeId: smeProfile.id },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        createdAt: true,
+        _count: {
+          select: { applications: true },
+        },
+      },
+    }),
+  ]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -23,7 +125,7 @@ export default function SMEDashboardPage() {
             <FolderKanban className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{smeProfile._count.projects}</div>
           </CardContent>
         </Card>
         <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
@@ -32,7 +134,7 @@ export default function SMEDashboardPage() {
             <Clock className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{activeProjects}</div>
           </CardContent>
         </Card>
         <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
@@ -41,20 +143,55 @@ export default function SMEDashboardPage() {
             <Users className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{totalApplicants}</div>
           </CardContent>
         </Card>
       </div>
 
       <div className="mt-8">
         <h3 className="text-lg font-semibold mb-4">Dự án gần đây</h3>
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur flex flex-col items-center justify-center h-48 text-muted-foreground">
-          <FolderKanban className="w-10 h-10 mb-4 opacity-20" />
-          <p>Bạn chưa đăng dự án nào.</p>
-          <Link href="/sme/projects/new">
-            <Button variant="link" className="text-primary mt-2">Bắt đầu tạo dự án đầu tiên</Button>
-          </Link>
-        </Card>
+        {recentProjects.length === 0 ? (
+          <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur flex flex-col items-center justify-center h-48 text-muted-foreground">
+            <FolderKanban className="w-10 h-10 mb-4 opacity-20" />
+            <p>Bạn chưa đăng dự án nào.</p>
+            <Link href="/sme/projects/new">
+              <Button variant="link" className="text-primary mt-2">Bắt đầu tạo dự án đầu tiên</Button>
+            </Link>
+          </Card>
+        ) : (
+          <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {recentProjects.map((project) => (
+                  <div
+                    className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    key={project.id}
+                  >
+                    <div className="space-y-1">
+                      <Link
+                        className="font-semibold hover:text-primary hover:underline"
+                        href={`/sme/projects/${project.id}`}
+                      >
+                        {project.title}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        Tạo ngày {new Date(project.createdAt).toLocaleDateString("vi-VN")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge className={projectStatusClass(project.status)} variant="outline">
+                        {projectStatusLabel(project.status)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {project._count.applications} ứng viên
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

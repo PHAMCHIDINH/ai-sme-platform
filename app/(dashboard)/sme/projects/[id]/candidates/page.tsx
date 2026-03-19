@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Check, X, Sparkles, Code2, GraduationCap } from "lucide-react";
+import { ArrowLeft, Sparkles, Code2, GraduationCap, Users } from "lucide-react";
 import { rankBySimilarity } from "@/lib/matching";
+import { CandidateActions } from "./candidate-actions";
 
 export default async function CandidatesPage({ params }: { params: { id: string } }) {
   const session = await auth();
@@ -14,23 +15,67 @@ export default async function CandidatesPage({ params }: { params: { id: string 
 
   const project = await prisma.project.findUnique({
     where: { id: params.id },
-    include: { applications: { include: { student: { include: { user: true } } } } }
+    include: {
+      sme: true,
+      applications: {
+        select: {
+          studentId: true,
+        },
+      },
+    },
   });
 
   if (!project) return notFound();
+  if (project.sme.userId !== session.user.id) return <div>Unauthorized</div>;
 
-  // Lấy tất cả sinh viên
-  const allStudents = await prisma.studentProfile.findMany({
-    include: { user: true }
+  const applicantIds = project.applications.map((application) => application.studentId);
+
+  const applicantsPool = applicantIds.length
+    ? await prisma.studentProfile.findMany({
+        where: {
+          id: {
+            in: applicantIds,
+          },
+        },
+        select: {
+          id: true,
+          university: true,
+          skills: true,
+          embedding: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      })
+    : [];
+
+  const suggestionsPool = await prisma.studentProfile.findMany({
+    where: {
+      ...(applicantIds.length
+        ? {
+            id: {
+              notIn: applicantIds,
+            },
+          }
+        : {}),
+    },
+    select: {
+      id: true,
+      university: true,
+      skills: true,
+      embedding: true,
+      user: {
+        select: {
+          name: true,
+        },
+      },
+    },
   });
 
-  // Tính điểm match với project hiện tại
-  const rankedStudents = rankBySimilarity(project.embedding, allStudents);
-  
-  // Phân tách sinh viên đã ứng tuyển và sinh viên gợi ý
-  const applicantIds = new Set(project.applications.map(a => a.studentId));
-  const applicants = rankedStudents.filter(s => applicantIds.has(s.id));
-  const suggestions = rankedStudents.filter(s => !applicantIds.has(s.id)).slice(0, 5); // top 5 gợi ý
+  const applicants = rankBySimilarity(project.embedding, applicantsPool);
+  const suggestions = rankBySimilarity(project.embedding, suggestionsPool).slice(0, 5);
 
   return (
     <div className="space-y-6 pb-10">
@@ -80,7 +125,18 @@ export default async function CandidatesPage({ params }: { params: { id: string 
   );
 }
 
-function StudentCard({ student, projectId, isApplied = false }: { student: any, projectId: string, isApplied?: boolean }) {
+type CandidateStudent = {
+  id: string;
+  user: {
+    name: string;
+  };
+  university: string;
+  skills: string[];
+  embedding: number[];
+  matchScore: number;
+};
+
+function StudentCard({ student, projectId, isApplied = false }: { student: CandidateStudent, projectId: string, isApplied?: boolean }) {
   // Lấy % match (nếu 0 thì chỉ hiển thị "N/A" hoặc 0%)
   const matchScore = student.matchScore;
   let colorClass = "text-muted-foreground";
@@ -128,10 +184,7 @@ function StudentCard({ student, projectId, isApplied = false }: { student: any, 
 
         <div className="flex gap-2 mt-5">
           {isApplied ? (
-            <>
-              <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white"><Check className="w-4 h-4 mr-1" /> Chấp nhận</Button>
-              <Button size="sm" variant="outline" className="flex-1 text-red-600 hover:text-red-700"><X className="w-4 h-4 mr-1" /> Từ chối</Button>
-            </>
+            <CandidateActions projectId={projectId} studentId={student.id} />
           ) : (
             <Button size="sm" variant="secondary" className="w-full text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100">
               Mời tham gia dự án
@@ -140,28 +193,5 @@ function StudentCard({ student, projectId, isApplied = false }: { student: any, 
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-// Giả lập icon thay vì import (do lúc nãy quên import Users)
-function Users(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
   );
 }

@@ -3,7 +3,7 @@ import { Space_Grotesk, Inter } from "next/font/google";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { ThemeProvider } from "@/components/theme/theme-provider";
+import { AppProviders } from "@/components/providers/app-providers";
 
 const geist = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -21,7 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="vi" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
       <body className={`${geist.variable} ${spaceGrotesk.variable}`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <AppProviders>
+          {children}
+        </AppProviders>
       </body>
     </html>
   );

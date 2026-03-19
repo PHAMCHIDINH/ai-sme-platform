@@ -1,11 +1,19 @@
+import { auth } from "@/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ArrowRight, CheckCircle2, Building2, GraduationCap, Zap, Sparkles, Target, Users } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
+
+  if (session) {
+    redirect(session.user.role === "SME" ? "/sme/dashboard" : "/student/dashboard");
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       {/* Background Effects */}

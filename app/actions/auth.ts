@@ -4,14 +4,7 @@ import { signIn } from "@/auth";
 import { AuthError } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcrypt";
-import { z } from "zod";
-
-const registerSchema = z.object({
-  name: z.string().min(2, "Tên phải có ít nhất 2 ký tự"),
-  email: z.string().email("Email không hợp lệ"),
-  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
-  role: z.enum(["SME", "STUDENT"]),
-});
+import { registerSchema } from "@/lib/validators/auth";
 
 export async function authenticate(
   prevState: string | undefined,
@@ -60,7 +53,7 @@ export async function register(prevState: string | undefined, formData: FormData
           name,
           email,
           password: hashedPassword,
-          role: role as any,
+          role,
         },
       });
 
