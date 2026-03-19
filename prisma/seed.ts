@@ -418,9 +418,38 @@ const projectDataBySmeName = (smeIdx: number): { title: string; description: str
   return all[smeIdx] || [];
 };
 
+type SeededStudent = {
+  userId: string;
+  profileId: string;
+  name: string;
+  email: string;
+};
+
+type SeededProject = {
+  id: string;
+  title: string;
+  smeUserId: string;
+};
+
+const EMBEDDING_DIMENSIONS = 8;
+
+function deterministicEmbedding(seed: string, dimensions = EMBEDDING_DIMENSIONS) {
+  return Array.from({ length: dimensions }, (_, index) => {
+    let hash = 0;
+    const saltedSeed = `${seed}:${index}`;
+    for (let i = 0; i < saltedSeed.length; i++) {
+      hash = (hash * 31 + saltedSeed.charCodeAt(i)) % 10007;
+    }
+    const normalized = (hash / 10007) * 2 - 1;
+    return Number(normalized.toFixed(6));
+  });
+}
+
 async function main() {
   console.log("🌱 Bắt đầu seed dữ liệu mẫu...");
   const password = await hash("password123", 10);
+  const seededStudents: SeededStudent[] = [];
+  const seededProjects: SeededProject[] = [];
 
   // Xoá dữ liệu cũ theo thứ tự để tránh FK conflict
   await prisma.evaluation.deleteMany();
@@ -453,9 +482,31 @@ async function main() {
             description: s.description,
             githubUrl: s.githubUrl,
             portfolioUrl: (s as any).portfolioUrl,
+            embedding: deterministicEmbedding(
+              `student:${s.email}:${s.skills.join(",")}:${s.technologies.join(",")}`,
+            ),
           },
         },
       },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        studentProfile: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+    if (!user.studentProfile) {
+      throw new Error(`Không thể tạo StudentProfile cho ${s.email}`);
+    }
+    seededStudents.push({
+      userId: user.id,
+      profileId: user.studentProfile.id,
+      name: user.name,
+      email: user.email,
     });
     console.log(`  ✔ Sinh viên: ${s.name} (${s.email})`);
   }
@@ -486,7 +537,7 @@ async function main() {
     const projects = projectDataBySmeName(i);
 
     for (const p of projects) {
-      await prisma.project.create({
+      const project = await prisma.project.create({
         data: {
           smeId: smeProfile.id,
           title: p.title,
@@ -497,17 +548,240 @@ async function main() {
           duration: p.duration,
           budget: p.budget,
           status: "OPEN",
+          embedding: deterministicEmbedding(
+            `project:${s.companyName}:${p.title}:${p.requiredSkills.join(",")}`,
+          ),
         },
+        select: {
+          id: true,
+          title: true,
+        },
+      });
+      seededProjects.push({
+        id: project.id,
+        title: project.title,
+        smeUserId: smeUser.id,
       });
     }
     console.log(`  ✔ SME: ${s.companyName} – ${projects.length} dự án`);
   }
 
+  console.log("🔁 Tạo dữ liệu luồng E2E mẫu...");
+  const [studentA, studentB, studentC] = seededStudents;
+  const [completedProject, inProgressProject, submittedProject] = seededProjects;
+
+  if (!studentA || !studentB || !studentC || !completedProject || !inProgressProject || !submittedProject) {
+    throw new Error("Không đủ dữ liệu seed để tạo luồng E2E mẫu.");
+  }
+
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.application.createMany({
+      data: [
+        {
+          projectId: completedProject.id,
+          studentId: studentA.profileId,
+          status: "ACCEPTED",
+          matchScore: 92,
+        },
+        {
+          projectId: completedProject.id,
+          studentId: studentB.profileId,
+          status: "REJECTED",
+          matchScore: 71,
+        },
+      ],
+    });
+
+    await tx.projectProgress.create({
+      data: {
+        projectId: completedProject.id,
+        studentId: studentA.profileId,
+        status: "COMPLETED",
+        milestones: [
+          {
+            id: "ms-completed-1",
+            title: "Kickoff và thống nhất yêu cầu",
+            createdAt: new Date(now - 12 * oneDayMs).toISOString(),
+          },
+          {
+            id: "ms-completed-2",
+            title: "Hoàn tất bản MVP",
+            createdAt: new Date(now - 8 * oneDayMs).toISOString(),
+          },
+        ],
+        updates: [
+          {
+            id: "upd-completed-1",
+            content: "Đã hoàn thành UI và tích hợp API chính.",
+            createdAt: new Date(now - 7 * oneDayMs).toISOString(),
+          },
+          {
+            id: "upd-completed-2",
+            content: "Đã fix bug và bàn giao tài liệu triển khai.",
+            createdAt: new Date(now - 4 * oneDayMs).toISOString(),
+          },
+        ],
+        deliverableUrl: "https://example.com/deliverables/completed-project",
+        deadline: new Date(now - 2 * oneDayMs),
+      },
+    });
+
+    await tx.project.update({
+      where: { id: completedProject.id },
+      data: { status: "COMPLETED" },
+    });
+
+    await tx.evaluation.create({
+      data: {
+        projectId: completedProject.id,
+        evaluatorId: completedProject.smeUserId,
+        evaluateeId: studentA.userId,
+        type: "SME_TO_STUDENT",
+        outputQuality: 5,
+        onTime: 5,
+        proactiveness: 4,
+        communication: 5,
+        overallFit: 5,
+        comment: "Sinh viên chủ động và bàn giao đầy đủ.",
+      },
+    });
+
+    await tx.evaluation.create({
+      data: {
+        projectId: completedProject.id,
+        evaluatorId: studentA.userId,
+        evaluateeId: completedProject.smeUserId,
+        type: "STUDENT_TO_SME",
+        outputQuality: 5,
+        onTime: 4,
+        proactiveness: 5,
+        communication: 5,
+        overallFit: 5,
+        comment: "Doanh nghiệp hỗ trợ nhanh, yêu cầu rõ ràng.",
+      },
+    });
+
+    await tx.application.createMany({
+      data: [
+        {
+          projectId: inProgressProject.id,
+          studentId: studentB.profileId,
+          status: "ACCEPTED",
+          matchScore: 88,
+        },
+        {
+          projectId: inProgressProject.id,
+          studentId: studentC.profileId,
+          status: "PENDING",
+          matchScore: 73,
+        },
+      ],
+    });
+
+    await tx.projectProgress.create({
+      data: {
+        projectId: inProgressProject.id,
+        studentId: studentB.profileId,
+        status: "IN_PROGRESS",
+        milestones: [
+          {
+            id: "ms-progress-1",
+            title: "Đã hoàn tất phân tích yêu cầu",
+            createdAt: new Date(now - 3 * oneDayMs).toISOString(),
+          },
+        ],
+        updates: [
+          {
+            id: "upd-progress-1",
+            content: "Đã dựng xong skeleton dự án và module auth.",
+            createdAt: new Date(now - 2 * oneDayMs).toISOString(),
+          },
+        ],
+        deadline: new Date(now + 10 * oneDayMs),
+      },
+    });
+
+    await tx.project.update({
+      where: { id: inProgressProject.id },
+      data: { status: "IN_PROGRESS" },
+    });
+
+    await tx.application.createMany({
+      data: [
+        {
+          projectId: submittedProject.id,
+          studentId: studentC.profileId,
+          status: "ACCEPTED",
+          matchScore: 90,
+        },
+        {
+          projectId: submittedProject.id,
+          studentId: studentA.profileId,
+          status: "REJECTED",
+          matchScore: 69,
+        },
+      ],
+    });
+
+    await tx.projectProgress.create({
+      data: {
+        projectId: submittedProject.id,
+        studentId: studentC.profileId,
+        status: "SUBMITTED",
+        milestones: [
+          {
+            id: "ms-submitted-1",
+            title: "Hoàn tất chức năng chính",
+            createdAt: new Date(now - 5 * oneDayMs).toISOString(),
+          },
+        ],
+        updates: [
+          {
+            id: "upd-submitted-1",
+            content: "Đã submit bản bàn giao, chờ SME nghiệm thu.",
+            createdAt: new Date(now - 1 * oneDayMs).toISOString(),
+          },
+        ],
+        deliverableUrl: "https://example.com/deliverables/submitted-project",
+        deadline: new Date(now + 5 * oneDayMs),
+      },
+    });
+
+    await tx.project.update({
+      where: { id: submittedProject.id },
+      data: { status: "SUBMITTED" },
+    });
+  });
+
+  const [statusSummary, projectsWithEmbedding, studentsWithEmbedding] = await Promise.all([
+    prisma.project.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    }),
+    prisma.project.count({
+      where: {
+        NOT: { embedding: { equals: [] } },
+      },
+    }),
+    prisma.studentProfile.count({
+      where: {
+        NOT: { embedding: { equals: [] } },
+      },
+    }),
+  ]);
+
   console.log("\n🎉 Seed hoàn tất!");
   console.log("📋 Tóm tắt:");
   console.log(`   • ${students.length} Sinh viên`);
   console.log(`   • ${smes.length} Doanh nghiệp SME`);
-  console.log(`   • 20 Dự án OPEN`);
+  console.log(`   • ${seededProjects.length} Dự án`);
+  console.log(
+    `   • Trạng thái dự án: ${statusSummary.map((item) => `${item.status}: ${item._count._all}`).join(", ")}`,
+  );
+  console.log(`   • Embedding: ${projectsWithEmbedding} dự án, ${studentsWithEmbedding} sinh viên`);
   console.log("\n🔑 Mật khẩu mặc định: password123");
 }
 

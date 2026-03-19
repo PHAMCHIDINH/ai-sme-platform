@@ -140,15 +140,15 @@ function StudentCard({ student, projectId, isApplied = false }: { student: Candi
   // Lấy % match (nếu 0 thì chỉ hiển thị "N/A" hoặc 0%)
   const matchScore = student.matchScore;
   let colorClass = "text-muted-foreground";
-  if (matchScore >= 80) colorClass = "text-green-600 dark:text-green-400";
-  else if (matchScore >= 60) colorClass = "text-amber-600 dark:text-amber-400";
+  if (matchScore >= 80) colorClass = "text-green-600";
+  else if (matchScore >= 60) colorClass = "text-amber-600";
 
   return (
-    <Card className="border-none shadow-sm bg-white/60 dark:bg-slate-900/60 backdrop-blur hover:shadow-md transition-shadow">
+    <Card className="border-none shadow-sm bg-white/60 backdrop-blur hover:shadow-md transition-shadow">
       <CardContent className="p-5">
         <div className="flex justify-between items-start mb-4">
           <div className="flex gap-3 items-center">
-            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold text-lg">
+            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-lg">
               {student.user.name.charAt(0).toUpperCase()}
             </div>
             <div>

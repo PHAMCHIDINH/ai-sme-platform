@@ -55,28 +55,34 @@ export function ProjectProgressActions({
   ) {
     event.preventDefault();
     setPendingAction(actionType);
+    try {
+      const form = event.currentTarget;
+      const formData = new FormData(form);
+      const result = await action(formData);
 
-    const form = event.currentTarget;
-    const formData = new FormData(form);
-    const result = await action(formData);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
 
-    if (result.error) {
-      toast.error(result.error);
+      form.reset();
+      onSuccess();
+      router.refresh();
+
+      if (actionType === "deliverable") {
+        toast.success("Đã nộp sản phẩm, đang chờ SME nghiệm thu.");
+      } else {
+        toast.success("Đã cập nhật tiến độ.");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật tiến độ lúc này. Vui lòng thử lại.",
+      );
+    } finally {
       setPendingAction(null);
-      return;
     }
-
-    form.reset();
-    onSuccess();
-    router.refresh();
-
-    if (actionType === "deliverable") {
-      toast.success("Đã nộp sản phẩm, đang chờ SME nghiệm thu.");
-    } else {
-      toast.success("Đã cập nhật tiến độ.");
-    }
-
-    setPendingAction(null);
   }
 
   if (isLocked) {

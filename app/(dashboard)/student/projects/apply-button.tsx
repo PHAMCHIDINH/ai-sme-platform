@@ -17,15 +17,23 @@ export function ApplyButton({ projectId, matchScore }: ApplyButtonProps) {
 
   async function handleApply() {
     setIsLoading(true);
-    const result = await applyProject(projectId, matchScore);
+    try {
+      const result = await applyProject(projectId, matchScore);
 
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Ứng tuyển thành công.");
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Ứng tuyển thành công.");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể ứng tuyển lúc này. Vui lòng thử lại.",
+      );
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }
 
   return (

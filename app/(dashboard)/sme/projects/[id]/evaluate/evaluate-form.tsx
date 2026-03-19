@@ -63,9 +63,17 @@ export function EvaluateForm({ studentName, submitAction }: EvaluateFormProps) {
     const formData = new FormData(form);
 
     startTransition(async () => {
-      const result = await submitAction(formData);
-      if (result?.error) {
-        toast.error(result.error);
+      try {
+        const result = await submitAction(formData);
+        if (result?.error) {
+          toast.error(result.error);
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Không thể gửi đánh giá lúc này. Vui lòng thử lại.",
+        );
       }
     });
   }
@@ -74,7 +82,7 @@ export function EvaluateForm({ studentName, submitAction }: EvaluateFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card className="border-none bg-white/50 shadow-sm backdrop-blur dark:bg-slate-900/50">
+      <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
         <CardHeader>
           <CardTitle>Tiêu chí đánh giá</CardTitle>
           <CardDescription>

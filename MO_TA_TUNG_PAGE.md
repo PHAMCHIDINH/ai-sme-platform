@@ -9,7 +9,7 @@
 | `/register` | Public | Trang đăng ký tài khoản mới. | Nhập `name/email/password/role`; submit qua server action `registerAction`; tạo user + profile mặc định theo role rồi chuyển tới login. |
 | `/student/dashboard` | Student | Dashboard tổng quan của sinh viên. | Thống kê số dự án đang tham gia, số dự án hoàn thành, điểm đánh giá trung bình từ SME. |
 | `/student/profile` | Student | Trang hồ sơ năng lực sinh viên. | Tải/lưu profile qua API; cập nhật trường học, kỹ năng, công nghệ, mô tả, link GitHub/Portfolio, availability, interests; hiển thị thành tích thực chiến. |
-| `/student/projects` | Student | Trang dự án gợi ý cho sinh viên. | Lấy dự án `OPEN`, xếp hạng bằng AI similarity (`rankBySimilarity`), hiển thị match score; cho phép ứng tuyển (upsert application `PENDING`). |
+| `/student/projects` | Student | Trang dự án gợi ý cho sinh viên. | Lấy dự án `OPEN`, xếp hạng bằng AI similarity (`rankBySimilarity`), hiển thị match score; cho phép ứng tuyển (`PENDING`). V1 chưa có trang chi tiết riêng cho từng project student. |
 | `/student/my-projects` | Student | Trang quản lý dự án đã được nhận. | Xem dự án accepted; thêm milestone; thêm cập nhật tiến độ; nộp link bàn giao (đổi status `SUBMITTED`); đánh giá SME khi dự án hoàn thành. |
 | `/sme/dashboard` | SME | Dashboard tổng quan doanh nghiệp. | Thống kê tổng dự án, dự án đang mở, tổng hồ sơ ứng viên; điều hướng nhanh tới trang tạo dự án mới. |
 | `/sme/projects` | SME | Danh sách dự án của SME. | Hiển thị trạng thái từng dự án, số ứng viên, deadline, độ khó; đi tới chi tiết dự án hoặc danh sách ứng viên. |
@@ -35,7 +35,7 @@
 | `GET /api/projects` | (có thể dùng cho dashboard/khác) | Trả danh sách project theo role: SME nhận project của mình, student nhận project `OPEN`. |
 | `GET /api/student-profile` | `/student/profile` | Lấy hồ sơ sinh viên + thống kê thành tích + rating. |
 | `POST /api/student-profile` | `/student/profile` | Lưu/cập nhật hồ sơ sinh viên và tạo embedding kỹ năng. |
-| `POST /api/matching` | (logic matching, có thể tái sử dụng) | Trả top ứng viên phù hợp cho một project theo embedding similarity. |
+| `POST /api/matching` | `/sme/projects/[id]/candidates` (logic matching) | Trả top ứng viên phù hợp theo embedding similarity; chỉ SME sở hữu project mới được gọi. |
 | `POST /api/ai/generate-embedding` | Internal/utility | Tạo embedding từ text đầu vào. |
 | `GET/POST /api/auth/[...nextauth]` | `/login`, toàn hệ thống auth | Endpoint auth của NextAuth (session/sign-in/sign-out/callback). |
 

@@ -25,7 +25,7 @@ function FieldError({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-sm text-destructive">{message}</p>;
+  return <p className="text-sm font-semibold text-destructive">{message}</p>;
 }
 
 export default function LoginPage() {
@@ -56,25 +56,23 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-primary text-primary-foreground p-2 rounded-xl group-hover:scale-105 transition-transform">
-              <Layers className="w-6 h-6" />
+        <div className="mb-6 flex justify-center">
+          <Link href="/" className="inline-flex items-center gap-2 rounded-md border-2 border-black bg-white px-4 py-2 shadow-neo-sm">
+            <div className="rounded-md border-2 border-black bg-violet-200 p-1">
+              <Layers className="h-5 w-5" />
             </div>
-            <span className="font-bold text-2xl tracking-tight">
-              VnSME<span className="text-primary">Match</span>
+            <span className="text-xl font-black">
+              VnSME<span className="text-violet-700">Match</span>
             </span>
           </Link>
         </div>
 
-        <Card className="shadow-xl bg-background/60 backdrop-blur-xl border-white/20 dark:border-white/10 rounded-3xl">
+        <Card className="bg-white">
           <CardHeader className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold">Chào mừng trở lại</CardTitle>
-            <CardDescription>
-              Đăng nhập để tiếp tục với tài khoản của bạn
-            </CardDescription>
+            <CardTitle className="text-2xl">Chào mừng trở lại</CardTitle>
+            <CardDescription>Đăng nhập để tiếp tục với tài khoản của bạn</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={onSubmit}>
@@ -93,9 +91,9 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Mật khẩu</Label>
-                  <Link href="#" className="text-sm font-medium text-primary hover:underline">
-                    Quên mật khẩu?
-                  </Link>
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    Quên mật khẩu? (Sắp có)
+                  </span>
                 </div>
                 <Input
                   autoComplete="current-password"
@@ -107,12 +105,12 @@ export default function LoginPage() {
               </div>
 
               {serverError ? (
-                <div className="p-3 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 text-sm rounded-lg">
+                <div className="rounded-md border-2 border-black bg-red-200 p-3 text-sm font-semibold">
                   {serverError}
                 </div>
               ) : null}
 
-              <Button className="w-full mt-6" disabled={isSubmitting} type="submit">
+              <Button className="mt-4 w-full" disabled={isSubmitting} type="submit">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -120,16 +118,16 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    Đăng nhập <ArrowRight className="ml-2 w-4 h-4" />
+                    Đăng nhập <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
               </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex flex-col gap-4 text-center text-sm text-muted-foreground">
+          <CardFooter className="flex flex-col gap-3 text-center text-sm font-medium text-muted-foreground">
             <div>
               Chưa có tài khoản?{" "}
-              <Link href="/register" className="font-semibold text-primary hover:underline">
+              <Link href="/register" className="font-black underline-offset-4 hover:underline">
                 Đăng ký ngay
               </Link>
             </div>

@@ -168,7 +168,7 @@ export default function StudentProfilePage() {
       <form onSubmit={onSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+            <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <GraduationCap className="w-5 h-5 mr-2 text-primary" /> Thông tin cơ bản
@@ -202,7 +202,7 @@ export default function StudentProfilePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur border-t-4 border-t-indigo-500">
+            <Card className="border-none shadow-sm bg-white/50 backdrop-blur border-t-4 border-t-indigo-500">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Code2 className="w-5 h-5 mr-2 text-indigo-500" /> Kỹ năng và Công nghệ
@@ -230,7 +230,7 @@ export default function StudentProfilePage() {
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+            <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
               <CardHeader>
                 <CardTitle>Liên kết & Thời gian</CardTitle>
               </CardHeader>
@@ -267,9 +267,9 @@ export default function StudentProfilePage() {
               </CardFooter>
             </Card>
 
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border border-indigo-100 dark:border-indigo-900/50">
-              <h4 className="font-semibold text-indigo-800 dark:text-indigo-400 mb-2">💡 Tips nhỏ</h4>
-              <p className="text-sm text-indigo-700/80 dark:text-indigo-300/80 leading-relaxed">
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100">
+              <h4 className="font-semibold text-indigo-800 mb-2">💡 Tips nhỏ</h4>
+              <p className="text-sm text-indigo-700/80 leading-relaxed">
                 Hồ sơ càng chi tiết ở phần Kỹ năng và Công nghệ, AI sẽ càng gợi ý chính xác dự án có thể đáp ứng năng lực của bạn, tăng tỷ lệ matching x3.
               </p>
             </div>

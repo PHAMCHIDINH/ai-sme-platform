@@ -172,7 +172,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
       </div>
 
       {existingEvaluation ? (
-        <Card className="border-none bg-white/50 shadow-sm backdrop-blur dark:bg-slate-900/50">
+        <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
           <CardHeader>
             <CardTitle>Bạn đã gửi đánh giá cho sinh viên này</CardTitle>
             <p className="text-sm text-muted-foreground">

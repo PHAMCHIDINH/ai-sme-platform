@@ -19,17 +19,25 @@ export function CandidateActions({ projectId, studentId }: CandidateActionsProps
 
   async function handleAction(status: "ACCEPTED" | "REJECTED") {
     setLoadingStatus(status);
-    const result = await updateCandidateStatus(projectId, studentId, status);
+    try {
+      const result = await updateCandidateStatus(projectId, studentId, status);
 
-    if (result.error) {
-      toast.error(result.error);
-    } else if (status === "ACCEPTED") {
-      toast.success("Đã chấp nhận ứng viên.");
-    } else {
-      toast.success("Đã từ chối ứng viên.");
+      if (result.error) {
+        toast.error(result.error);
+      } else if (status === "ACCEPTED") {
+        toast.success("Đã chấp nhận ứng viên.");
+      } else {
+        toast.success("Đã từ chối ứng viên.");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể cập nhật trạng thái ứng viên lúc này.",
+      );
+    } finally {
+      setLoadingStatus(null);
     }
-
-    setLoadingStatus(null);
   }
 
   const isLoading = loadingStatus !== null;

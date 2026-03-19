@@ -53,7 +53,7 @@ export default async function SMEProjectsPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <Card key={project.id} className="flex flex-col overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur border-none shadow-sm hover:shadow-md transition-shadow">
+            <Card key={project.id} className="flex flex-col overflow-hidden bg-white/50 backdrop-blur border-none shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="pb-3 border-b bg-muted/20">
                 <div className="flex justify-between items-start mb-2">
                   <Badge variant={
@@ -87,7 +87,7 @@ export default async function SMEProjectsPage() {
               <CardContent className="flex-grow pt-4">
                 <div className="flex flex-wrap gap-2 mb-4">
                   {project.requiredSkills.slice(0, 3).map((skill) => (
-                    <Badge key={skill} variant="secondary" className="text-xs font-normal bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                    <Badge key={skill} variant="secondary" className="text-xs font-normal bg-blue-100 text-blue-800">
                       {skill}
                     </Badge>
                   ))}
@@ -96,7 +96,7 @@ export default async function SMEProjectsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center text-sm font-medium text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 w-fit px-3 py-1.5 rounded-lg">
+                <div className="flex items-center text-sm font-medium text-amber-600 bg-amber-50 w-fit px-3 py-1.5 rounded-lg">
                   <Users className="w-4 h-4 mr-2" />
                   {project._count.applications} Ứng viên
                 </div>

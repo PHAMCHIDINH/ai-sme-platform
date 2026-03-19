@@ -149,7 +149,7 @@ export default function NewProjectPage() {
       <form onSubmit={onSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+            <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
               <CardHeader>
                 <CardTitle>Mô tả bài toán</CardTitle>
                 <CardDescription>Mô tả chi tiết những gì bạn cần giải quyết</CardDescription>
@@ -198,7 +198,7 @@ export default function NewProjectPage() {
                 </div>
 
                 {standardizedBrief ? (
-                  <div className="space-y-2 p-4 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/50 animate-in fade-in">
+                  <div className="space-y-2 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100 animate-in fade-in">
                     <Label className="text-indigo-700 font-semibold flex items-center">
                       <Sparkles className="w-4 h-4 mr-2" /> Brief Chuẩn Hóa Bằng AI
                     </Label>
@@ -216,7 +216,7 @@ export default function NewProjectPage() {
           </div>
 
           <div className="md:col-span-1 space-y-6">
-            <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+            <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
               <CardHeader>
                 <CardTitle>Cấu hình dự án</CardTitle>
               </CardHeader>

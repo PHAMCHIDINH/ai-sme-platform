@@ -39,21 +39,29 @@ export function SmeProfileForm({ initialValues, submitAction }: SmeProfileFormPr
     const formData = new FormData(form);
 
     startTransition(async () => {
-      const result = await submitAction(formData);
+      try {
+        const result = await submitAction(formData);
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
+
+        toast.success("Đã cập nhật hồ sơ doanh nghiệp.");
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Không thể cập nhật hồ sơ doanh nghiệp lúc này.",
+        );
       }
-
-      toast.success("Đã cập nhật hồ sơ doanh nghiệp.");
-      router.refresh();
     });
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card className="border-none bg-white/50 shadow-sm backdrop-blur dark:bg-slate-900/50">
+      <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Building2 className="mr-2 h-5 w-5 text-primary" />

@@ -2,7 +2,6 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { ReactNode } from "react";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export default async function DashboardLayout({
   children,
@@ -20,26 +19,21 @@ export default async function DashboardLayout({
   const userName = user.name || user.email || "Người dùng";
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-yellow-100/70">
       <div className="hidden md:flex">
         <DashboardSidebar role={role} userName={userName} />
       </div>
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Mobile header */}
-        <header className="flex md:hidden h-14 border-b bg-background/95 backdrop-blur items-center justify-between px-4">
-          <span className="font-bold text-base">
-            VnSME<span className="text-primary">Match</span>
+      <div className="flex h-full flex-1 flex-col overflow-hidden">
+        <header className="flex h-14 items-center justify-between border-b-2 border-black bg-yellow-200 px-4 md:hidden">
+          <span className="text-base font-black">
+            VnSME<span className="text-violet-700">Match</span>
           </span>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">{userName}</div>
-            <ThemeToggle />
-          </div>
+          <div className="max-w-[180px] truncate text-sm font-semibold">{userName}</div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-muted/10 p-4 md:p-8">
-          <div className="max-w-6xl mx-auto h-full space-y-8">{children}</div>
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="mx-auto h-full max-w-6xl space-y-8">{children}</div>
         </main>
       </div>
     </div>

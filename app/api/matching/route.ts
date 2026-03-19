@@ -10,45 +10,88 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const body = await request.json();
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
+    if (session.user.role !== "SME") {
+      return NextResponse.json(
+        { error: "Chỉ doanh nghiệp mới có quyền dùng API matching." },
+        { status: 403 },
+      );
+    }
 
-  const project = await prisma.project.findUnique({
-    where: { id: parsed.data.projectId },
-    select: { id: true, embedding: true, title: true },
-  });
+    const body = await request.json();
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message ?? "projectId không hợp lệ." },
+        { status: 400 },
+      );
+    }
 
-  if (!project) {
-    return NextResponse.json({ error: "Project not found" }, { status: 404 });
-  }
-
-  const students = await prisma.studentProfile.findMany({
-    where: { NOT: { embedding: { equals: [] } } },
-    include: {
-      user: {
-        select: { id: true, name: true, email: true },
+    const project = await prisma.project.findUnique({
+      where: { id: parsed.data.projectId },
+      select: {
+        id: true,
+        embedding: true,
+        title: true,
+        sme: {
+          select: {
+            userId: true,
+          },
+        },
       },
-    },
-  });
+    });
 
-  const ranked = rankBySimilarity(project.embedding, students).slice(0, 10).map((student) => ({
-    id: student.id,
-    userId: student.userId,
-    name: student.user.name,
-    email: student.user.email,
-    skills: student.skills,
-    technologies: student.technologies,
-    githubUrl: student.githubUrl,
-    matchScore: student.matchScore,
-  }));
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
 
-  return NextResponse.json({ projectId: project.id, candidates: ranked });
+    if (project.sme.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: "Bạn không có quyền xem matching của dự án này." },
+        { status: 403 },
+      );
+    }
+
+    if (project.embedding.length === 0) {
+      return NextResponse.json(
+        { error: "Dự án chưa có dữ liệu embedding để matching." },
+        { status: 400 },
+      );
+    }
+
+    const students = await prisma.studentProfile.findMany({
+      where: { NOT: { embedding: { equals: [] } } },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    const ranked = rankBySimilarity(project.embedding, students)
+      .slice(0, 10)
+      .map((student) => ({
+        id: student.id,
+        userId: student.userId,
+        name: student.user.name,
+        email: student.user.email,
+        skills: student.skills,
+        technologies: student.technologies,
+        githubUrl: student.githubUrl,
+        matchScore: student.matchScore,
+      }));
+
+    return NextResponse.json({ projectId: project.id, candidates: ranked });
+  } catch (error) {
+    console.error("Matching API Error:", error);
+    return NextResponse.json(
+      { error: "Không thể lấy danh sách ứng viên lúc này." },
+      { status: 500 },
+    );
+  }
 }

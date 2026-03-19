@@ -17,6 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AcceptDeliverableButton } from "./accept-deliverable-button";
 
 type MilestoneItem = {
   id: string;
@@ -28,6 +29,11 @@ type ProgressUpdateItem = {
   id: string;
   content: string;
   createdAt: string;
+};
+
+type ActionResult = {
+  success?: true;
+  error?: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -105,12 +111,12 @@ function progressStatusLabel(status: ProgressStatus) {
 
 function progressStatusClassName(status: ProgressStatus) {
   if (status === "COMPLETED") {
-    return "border-green-500 text-green-600 dark:text-green-400";
+    return "border-green-500 text-green-600";
   }
   if (status === "SUBMITTED") {
-    return "border-amber-500 text-amber-600 dark:text-amber-400";
+    return "border-amber-500 text-amber-600";
   }
-  return "border-blue-500 text-blue-600 dark:text-blue-400";
+  return "border-blue-500 text-blue-600";
 }
 
 function formatDateTime(value: string | Date) {
@@ -128,49 +134,57 @@ export default async function SMEProjectDetailPage({
     return <div>Unauthorized</div>;
   }
 
-  async function markAsCompleted(projectId: string) {
+  async function markAsCompleted(projectId: string): Promise<ActionResult> {
     "use server";
 
-    const activeSession = await auth();
-    if (!activeSession || activeSession.user.role !== "SME") {
-      return;
-    }
+    try {
+      const activeSession = await auth();
+      if (!activeSession || activeSession.user.role !== "SME") {
+        return { error: "Bạn không có quyền thực hiện thao tác này." };
+      }
 
-    const ownedProject = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: {
-        sme: true,
-        progress: true,
-      },
-    });
-
-    if (!ownedProject || ownedProject.sme.userId !== activeSession.user.id) {
-      return;
-    }
-
-    if (
-      ownedProject.status !== "SUBMITTED" ||
-      ownedProject.progress?.status !== "SUBMITTED" ||
-      !ownedProject.progress.deliverableUrl
-    ) {
-      return;
-    }
-
-    await prisma.$transaction([
-      prisma.project.update({
+      const ownedProject = await prisma.project.findUnique({
         where: { id: projectId },
-        data: { status: "COMPLETED" },
-      }),
-      prisma.projectProgress.update({
-        where: { projectId },
-        data: { status: "COMPLETED" },
-      }),
-    ]);
+        include: {
+          sme: true,
+          progress: true,
+        },
+      });
 
-    revalidatePath(`/sme/projects/${projectId}`);
-    revalidatePath("/sme/projects");
-    revalidatePath("/student/my-projects");
-    revalidatePath("/student/dashboard");
+      if (!ownedProject || ownedProject.sme.userId !== activeSession.user.id) {
+        return { error: "Bạn không có quyền nghiệm thu dự án này." };
+      }
+
+      if (
+        ownedProject.status !== "SUBMITTED" ||
+        ownedProject.progress?.status !== "SUBMITTED" ||
+        !ownedProject.progress.deliverableUrl
+      ) {
+        return {
+          error: "Dự án chưa ở trạng thái chờ nghiệm thu hoặc chưa có link bàn giao.",
+        };
+      }
+
+      await prisma.$transaction([
+        prisma.project.update({
+          where: { id: projectId },
+          data: { status: "COMPLETED" },
+        }),
+        prisma.projectProgress.update({
+          where: { projectId },
+          data: { status: "COMPLETED" },
+        }),
+      ]);
+
+      revalidatePath(`/sme/projects/${projectId}`);
+      revalidatePath("/sme/projects");
+      revalidatePath("/student/my-projects");
+      revalidatePath("/student/dashboard");
+      return { success: true };
+    } catch (error) {
+      console.error("markAsCompleted error:", error);
+      return { error: "Không thể nghiệm thu bàn giao lúc này. Vui lòng thử lại." };
+    }
   }
 
   const project = await prisma.project.findUnique({
@@ -243,7 +257,7 @@ export default async function SMEProjectDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card className="border-none bg-white/50 shadow-sm backdrop-blur dark:bg-slate-900/50">
+          <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
             <CardHeader>
               <CardTitle>Nội dung dự án</CardTitle>
             </CardHeader>
@@ -259,11 +273,11 @@ export default async function SMEProjectDetailPage({
 
               {project.standardizedBrief ? (
                 <div>
-                  <h4 className="mb-2 flex items-center text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                  <h4 className="mb-2 flex items-center text-sm font-semibold text-indigo-600">
                     <CheckCircle2 className="mr-1 h-4 w-4" />
                     Brief đã chuẩn hóa (Bằng AI)
                   </h4>
-                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-sm leading-relaxed whitespace-pre-wrap dark:border-indigo-900/30 dark:bg-indigo-950/20">
+                  <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-sm leading-relaxed whitespace-pre-wrap">
                     {project.standardizedBrief}
                   </div>
                 </div>
@@ -294,19 +308,19 @@ export default async function SMEProjectDetailPage({
         </div>
 
         <div className="space-y-6 lg:col-span-1">
-          <Card className="border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm backdrop-blur dark:border-blue-900/50 dark:from-blue-950/30 dark:to-indigo-950/30">
+          <Card className="border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm backdrop-blur">
             <CardHeader>
-              <CardTitle className="flex items-center text-blue-800 dark:text-blue-300">
+              <CardTitle className="flex items-center text-blue-800">
                 <Users className="mr-2 h-5 w-5" />
                 Ứng viên & Matching
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="py-6 text-center">
-                <div className="mb-2 text-4xl font-black text-blue-600 dark:text-blue-400">
+                <div className="mb-2 text-4xl font-black text-blue-600">
                   {project._count.applications}
                 </div>
-                <p className="mb-6 text-sm font-medium text-blue-800/70 dark:text-blue-300/70">
+                <p className="mb-6 text-sm font-medium text-blue-800/70">
                   Sinh viên đã ứng tuyển
                 </p>
                 <Link href={`/sme/projects/${project.id}/candidates`}>
@@ -318,7 +332,7 @@ export default async function SMEProjectDetailPage({
             </CardContent>
           </Card>
 
-          <Card className="border-none bg-white/50 shadow-sm backdrop-blur dark:bg-slate-900/50">
+          <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
             <CardHeader>
               <CardTitle className="flex items-center text-base">
                 <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -443,11 +457,9 @@ export default async function SMEProjectDetailPage({
                   ) : null}
 
                   {project.status === "SUBMITTED" ? (
-                    <form action={markAsCompleted.bind(null, project.id)}>
-                      <Button className="w-full bg-green-600 text-white hover:bg-green-700">
-                        Chấp nhận bàn giao
-                      </Button>
-                    </form>
+                    <AcceptDeliverableButton
+                      action={markAsCompleted.bind(null, project.id)}
+                    />
                   ) : null}
                 </div>
               )}

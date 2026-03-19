@@ -119,7 +119,7 @@ export default async function SMEDashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Tổng dự án</CardTitle>
             <FolderKanban className="h-4 w-4 text-blue-500" />
@@ -128,7 +128,7 @@ export default async function SMEDashboardPage() {
             <div className="text-2xl font-bold">{smeProfile._count.projects}</div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Đang diễn ra</CardTitle>
             <Clock className="h-4 w-4 text-amber-500" />
@@ -137,7 +137,7 @@ export default async function SMEDashboardPage() {
             <div className="text-2xl font-bold">{activeProjects}</div>
           </CardContent>
         </Card>
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Sinh viên ứng tuyển</CardTitle>
             <Users className="h-4 w-4 text-indigo-500" />
@@ -151,7 +151,7 @@ export default async function SMEDashboardPage() {
       <div className="mt-8">
         <h3 className="text-lg font-semibold mb-4">Dự án gần đây</h3>
         {recentProjects.length === 0 ? (
-          <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur flex flex-col items-center justify-center h-48 text-muted-foreground">
+          <Card className="border-none shadow-sm bg-white/50 backdrop-blur flex flex-col items-center justify-center h-48 text-muted-foreground">
             <FolderKanban className="w-10 h-10 mb-4 opacity-20" />
             <p>Bạn chưa đăng dự án nào.</p>
             <Link href="/sme/projects/new">
@@ -159,7 +159,7 @@ export default async function SMEDashboardPage() {
             </Link>
           </Card>
         ) : (
-          <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+          <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
             <CardContent className="p-0">
               <div className="divide-y">
                 {recentProjects.map((project) => (

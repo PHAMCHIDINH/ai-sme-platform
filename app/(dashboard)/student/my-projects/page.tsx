@@ -454,7 +454,7 @@ export default async function StudentMyProjectsPage() {
             return (
               <Card
                 key={entry.id}
-                className="border border-border/50 shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur overflow-hidden"
+                className="border border-border/50 shadow-sm bg-white/50 backdrop-blur overflow-hidden"
               >
                 <div className={`h-2 w-full ${statusBarClassName(entry.status)}`} />
                 <CardContent className="p-6">

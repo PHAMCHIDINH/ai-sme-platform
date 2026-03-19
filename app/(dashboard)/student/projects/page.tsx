@@ -24,12 +24,12 @@ export default async function StudentProjectsPage() {
       status: "OPEN",
       ...(profile
         ? {
-            applications: {
-              none: {
-                studentId: profile.id,
-              },
+          applications: {
+            none: {
+              studentId: profile.id,
             },
-          }
+          },
+        }
         : {}),
     },
     select: {
@@ -50,7 +50,7 @@ export default async function StudentProjectsPage() {
   // Xếp hạng bằng AI similarity nếu có profile embedding
   type RankedProject = (typeof availableProjects)[number] & { matchScore: number };
   let rankedProjects: RankedProject[] = [];
-  
+
   if (profile?.embedding && profile.embedding.length > 0) {
     rankedProjects = rankBySimilarity(profile.embedding, availableProjects) as RankedProject[];
   } else {
@@ -70,9 +70,9 @@ export default async function StudentProjectsPage() {
       </div>
 
       {!profile?.embedding || profile.embedding.length === 0 ? (
-         <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-xl text-amber-800 dark:text-amber-400 text-sm">
-           ⚠️ Bạn chưa cập nhật kỹ năng đầy đủ. Hãy <Link href="/student/profile" className="font-bold underline">cập nhật Profile</Link> để AI có thể phân tích và gợi ý chính xác nhất.
-         </div>
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+          ⚠️ Bạn chưa cập nhật kỹ năng đầy đủ. Hãy <Link href="/student/profile" className="font-bold underline">cập nhật Profile</Link> để AI có thể phân tích và gợi ý chính xác nhất.
+        </div>
       ) : null}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -81,9 +81,9 @@ export default async function StudentProjectsPage() {
             Hiện chưa có dự án nào phù hợp hoặc đang mở. Vui lòng quay lại sau!
           </div>
         ) : rankedProjects.map((project) => (
-          <Card key={project.id} className="flex flex-col overflow-hidden bg-white/50 dark:bg-slate-900/50 backdrop-blur border-none shadow-sm hover:shadow-md transition-all group">
+          <Card key={project.id} className="flex flex-col overflow-hidden bg-white/50 backdrop-blur border-none shadow-sm hover:shadow-md transition-all group">
             <CardHeader className="pb-3 border-b bg-muted/20 relative">
-              
+
               {/* AI Match Badge */}
               {project.matchScore > 0 && (
                 <div className="absolute -top-3 -right-3 w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-lg rotate-12 group-hover:rotate-0 transition-transform">
@@ -92,14 +92,14 @@ export default async function StudentProjectsPage() {
                   </div>
                 </div>
               )}
-              
+
               <div className="flex justify-between items-start mb-2 pr-10">
                 <span className="text-xs font-semibold text-primary flex items-center bg-primary/10 px-2 py-1 rounded">
                   <Building2 className="w-3 h-3 mr-1" /> {project.sme.companyName}
                 </span>
               </div>
               <CardTitle className="line-clamp-2 text-lg leading-tight group-hover:text-primary transition-colors">
-                <Link href={`/student/projects/${project.id}`}>{project.title}</Link>
+                {project.title}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-grow pt-4">
@@ -117,7 +117,7 @@ export default async function StudentProjectsPage() {
                   <Badge variant="secondary" className="text-[10px] font-normal">+{project.requiredSkills.length - 3}</Badge>
                 )}
               </div>
-              
+
               <div className="flex items-center text-xs text-muted-foreground">
                 <CalendarDays className="w-3.5 h-3.5 mr-1" />
                 Thời lượng: <span className="font-medium ml-1 text-foreground">{project.duration}</span>

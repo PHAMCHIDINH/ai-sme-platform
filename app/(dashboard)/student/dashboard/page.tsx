@@ -54,17 +54,17 @@ export default async function StudentDashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 backdrop-blur">
+        <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-50 to-blue-50 backdrop-blur">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Đang thực hiện</CardTitle>
+            <CardTitle className="text-sm font-medium text-indigo-700">Đang thực hiện</CardTitle>
             <Layers className="h-4 w-4 text-indigo-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-100">{activeProjects}</div>
+            <div className="text-2xl font-bold text-indigo-900">{activeProjects}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Đã ứng tuyển</CardTitle>
             <FolderKanban className="h-4 w-4 text-blue-500" />
@@ -74,7 +74,7 @@ export default async function StudentDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Hoàn thành</CardTitle>
             <Award className="h-4 w-4 text-green-500" />
@@ -84,7 +84,7 @@ export default async function StudentDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Đánh giá TB</CardTitle>
             <Star className="h-4 w-4 text-amber-500" />
@@ -98,7 +98,7 @@ export default async function StudentDashboardPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mt-8">
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader>
             <CardTitle>Dự án AI gợi ý mới nhất</CardTitle>
             <CardDescription>Các dự án phù hợp với kỹ năng của bạn</CardDescription>
@@ -107,14 +107,14 @@ export default async function StudentDashboardPage() {
             <Code2 className="w-10 h-10 mb-4 text-indigo-400 opacity-50" />
             <p className="text-muted-foreground text-sm mb-4">Hệ thống có nhiều bài toán mới chờ bạn khám phá</p>
             <Link href="/student/projects">
-              <Button variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-950/50">
+              <Button variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50">
                 Khám phá ngay
               </Button>
             </Link>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur">
+        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
           <CardHeader>
             <CardTitle>Phát triển hồ sơ</CardTitle>
             <CardDescription>Trang bị tốt hơn cho AI Matching</CardDescription>

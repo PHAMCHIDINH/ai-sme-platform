@@ -70,17 +70,25 @@ export function SmeEvaluationDialog({
     const formData = new FormData(form);
 
     startTransition(async () => {
-      const result = await submitAction(formData);
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
+      try {
+        const result = await submitAction(formData);
+        if (result.error) {
+          toast.error(result.error);
+          return;
+        }
 
-      toast.success("Đã gửi đánh giá doanh nghiệp.");
-      setDialogOpen(false);
-      setComment("");
-      setRatings(initialRatings);
-      router.refresh();
+        toast.success("Đã gửi đánh giá doanh nghiệp.");
+        setDialogOpen(false);
+        setComment("");
+        setRatings(initialRatings);
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Không thể gửi đánh giá lúc này. Vui lòng thử lại.",
+        );
+      }
     });
   }
 

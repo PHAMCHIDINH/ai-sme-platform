@@ -22,20 +22,57 @@ export async function applyProject(projectId: string, matchScore: number) {
       return { error: "Không tìm thấy hồ sơ sinh viên." };
     }
 
-    await prisma.application.upsert({
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!project) {
+      return { error: "Dự án không tồn tại." };
+    }
+
+    if (project.status !== "OPEN") {
+      return { error: "Dự án đã đóng ứng tuyển." };
+    }
+
+    const existingApplication = await prisma.application.findUnique({
       where: {
         projectId_studentId: {
           projectId,
           studentId: profile.id,
         },
       },
-      create: {
+      select: {
+        status: true,
+      },
+    });
+
+    if (existingApplication) {
+      if (existingApplication.status === "PENDING") {
+        return { error: "Bạn đã ứng tuyển dự án này rồi." };
+      }
+
+      if (existingApplication.status === "ACCEPTED") {
+        return { error: "Bạn đã được chấp nhận vào dự án này." };
+      }
+
+      return { error: "Hồ sơ ứng tuyển trước đó của bạn đã bị từ chối." };
+    }
+
+    const safeMatchScore = Number.isFinite(matchScore)
+      ? Math.max(0, Math.min(100, Math.round(matchScore)))
+      : 0;
+
+    await prisma.application.create({
+      data: {
         projectId,
         studentId: profile.id,
         status: "PENDING",
-        matchScore,
+        matchScore: safeMatchScore,
       },
-      update: {},
     });
 
     revalidatePath("/student/projects");
@@ -70,6 +107,34 @@ export async function updateCandidateStatus(
       return { error: "Bạn không sở hữu dự án này." };
     }
 
+    if (project.status !== "OPEN") {
+      return { error: "Dự án đã chốt ứng viên, không thể thay đổi trạng thái hồ sơ." };
+    }
+
+    const application = await prisma.application.findUnique({
+      where: {
+        projectId_studentId: {
+          projectId,
+          studentId,
+        },
+      },
+      select: {
+        status: true,
+      },
+    });
+
+    if (!application) {
+      return { error: "Ứng viên chưa nộp hồ sơ cho dự án này." };
+    }
+
+    if (application.status !== "PENDING") {
+      if (application.status === "ACCEPTED") {
+        return { error: "Ứng viên này đã được chấp nhận trước đó." };
+      }
+
+      return { error: "Ứng viên này đã bị từ chối trước đó." };
+    }
+
     const deadline = project.deadline ?? new Date(Date.now() + DEFAULT_DEADLINE_MS);
 
     await prisma.$transaction(async (tx) => {
@@ -88,6 +153,7 @@ export async function updateCandidateStatus(
           where: {
             projectId,
             studentId: { not: studentId },
+            status: "PENDING",
           },
           data: { status: "REJECTED" },
         });
@@ -124,6 +190,10 @@ export async function updateCandidateStatus(
     });
 
     revalidatePath(`/sme/projects/${projectId}/candidates`);
+    revalidatePath(`/sme/projects/${projectId}`);
+    revalidatePath("/sme/projects");
+    revalidatePath("/student/projects");
+    revalidatePath("/student/my-projects");
     return { success: true as const };
   } catch (error) {
     console.error("updateCandidateStatus error:", error);

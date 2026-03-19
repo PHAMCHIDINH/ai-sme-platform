@@ -152,4 +152,6 @@ model Evaluation {
   project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   evaluator    User     @relation("Evaluator", fields: [evaluatorId], references: [id], onDelete: Cascade)
   evaluatee    User     @relation("Evaluatee", fields: [evaluateeId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, evaluatorId, type])
 }
