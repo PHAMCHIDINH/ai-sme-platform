@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:with-db": "npm run db:up && npm run dev",
     "build": "next build",
+    "vercel-build": "prisma db push && prisma generate && npm run db:seed && next build",
     "analyze": "cross-env ANALYZE=true next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { generateEmbedding } from "@/lib/openai";
+import { canGenerateEmbedding, generateEmbedding } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
 import { studentProfileSchema } from "@/lib/validators/student-profile";
 
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     });
 
     const shouldRegenerateEmbedding =
-      Boolean(process.env.OPENAI_API_KEY) &&
+      canGenerateEmbedding() &&
       (
         !existingProfile ||
         existingProfile.major !== major ||

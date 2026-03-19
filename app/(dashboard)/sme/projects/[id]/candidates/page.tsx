@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Sparkles, Code2, GraduationCap, Users } from "lucide-react";
 import { rankBySimilarity } from "@/lib/matching";
 import { CandidateActions } from "./candidate-actions";
+import { InviteAction } from "./invite-action";
 
 export default async function CandidatesPage({ params }: { params: { id: string } }) {
   const session = await auth();
@@ -20,6 +21,8 @@ export default async function CandidatesPage({ params }: { params: { id: string 
       applications: {
         select: {
           studentId: true,
+          status: true,
+          initiatedBy: true,
         },
       },
     },
@@ -28,7 +31,8 @@ export default async function CandidatesPage({ params }: { params: { id: string 
   if (!project) return notFound();
   if (project.sme.userId !== session.user.id) return <div>Unauthorized</div>;
 
-  const applicantIds = project.applications.map((application) => application.studentId);
+  const applicantIds = project.applications.map((app: any) => app.studentId);
+  const applicationMap = new Map(project.applications.map((app: any) => [app.studentId, app]));
 
   const applicantsPool = applicantIds.length
     ? await prisma.studentProfile.findMany({
@@ -74,7 +78,10 @@ export default async function CandidatesPage({ params }: { params: { id: string 
     },
   });
 
-  const applicants = rankBySimilarity(project.embedding, applicantsPool);
+  const applicants = rankBySimilarity(project.embedding, applicantsPool).map((s: any) => ({
+    ...s,
+    applicationData: applicationMap.get(s.id),
+  }));
   const suggestions = rankBySimilarity(project.embedding, suggestionsPool).slice(0, 5);
 
   return (
@@ -103,7 +110,7 @@ export default async function CandidatesPage({ params }: { params: { id: string 
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {applicants.map(student => (
-              <StudentCard key={student.id} student={student} projectId={project.id} isApplied />
+              <StudentCard key={student.id} student={student} projectId={project.id} />
             ))}
           </div>
         )}
@@ -134,9 +141,13 @@ type CandidateStudent = {
   skills: string[];
   embedding: number[];
   matchScore: number;
+  applicationData?: {
+    status: string;
+    initiatedBy: string;
+  };
 };
 
-function StudentCard({ student, projectId, isApplied = false }: { student: CandidateStudent, projectId: string, isApplied?: boolean }) {
+function StudentCard({ student, projectId }: { student: CandidateStudent, projectId: string }) {
   // Lấy % match (nếu 0 thì chỉ hiển thị "N/A" hoặc 0%)
   const matchScore = student.matchScore;
   let colorClass = "text-muted-foreground";
@@ -183,12 +194,17 @@ function StudentCard({ student, projectId, isApplied = false }: { student: Candi
         </div>
 
         <div className="flex gap-2 mt-5">
-          {isApplied ? (
-            <CandidateActions projectId={projectId} studentId={student.id} />
+          {student.applicationData ? (
+             student.applicationData.status === "PENDING" ? (
+                <CandidateActions projectId={projectId} studentId={student.id} />
+             ) : (
+                <div className="w-full text-center p-3 rounded-md font-black uppercase text-xs border-2 border-black bg-gray-100 shadow-neo-sm">
+                  {student.applicationData.status === "INVITED" ? "Đã gửi lời mời" : 
+                   student.applicationData.status === "ACCEPTED" ? "Đã NHẬN VÀO DỰ ÁN" : "Đã từ chối"}
+                </div>
+             )
           ) : (
-            <Button size="sm" variant="secondary" className="w-full text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100">
-              Mời tham gia dự án
-            </Button>
+            <InviteAction projectId={projectId} studentId={student.id} />
           )}
         </div>
       </CardContent>

@@ -17,6 +17,25 @@ Luu y:
 - Local dev van can PostgreSQL o `localhost:5432` (duoc chay boi `db` service).
 - Neu gap loi `Can't reach database server at localhost:5432`, chay lai `npm run db:up`.
 - Neu dang chay `next dev`, su dung `npm run db:push` (da `--skip-generate`) de tranh loi khoa file Prisma engine tren Windows.
+- De bat AI on dinh, can set day du bo bien OPENAI (khong chi `OPENAI_API_KEY`).
+
+### Cau hinh AI env (local va Docker can dong bo)
+
+Bat buoc:
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL` (de trong neu goi truc tiep OpenAI)
+- `OPENAI_CHAT_MODEL`
+- `OPENAI_EMBEDDING_MODEL`
+
+Vi du OpenRouter:
+- `OPENAI_BASE_URL=https://openrouter.ai/api/v1`
+- `OPENAI_CHAT_MODEL=stepfun/step-3.5-flash:free`
+- `OPENAI_EMBEDDING_MODEL=openai/text-embedding-3-small`
+
+Vi du OpenAI:
+- `OPENAI_BASE_URL=` (bo trong)
+- `OPENAI_CHAT_MODEL=gpt-4o-mini`
+- `OPENAI_EMBEDDING_MODEL=text-embedding-3-small`
 
 ## Trien khai bang Docker
 

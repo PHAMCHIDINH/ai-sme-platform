@@ -13,6 +13,7 @@ import {
   Layers,
   LogOut,
   Loader2,
+  Search,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -21,6 +22,7 @@ const routes = {
     { name: "Tổng quan", href: "/sme/dashboard", icon: LayoutDashboard },
     { name: "Dự án của tôi", href: "/sme/projects", icon: FolderKanban },
     { name: "Đăng dự án mới", href: "/sme/projects/new", icon: PlusCircle },
+    { name: "Tìm sinh viên", href: "/sme/students", icon: Search },
     { name: "Hồ sơ doanh nghiệp", href: "/sme/profile", icon: UserCircle },
   ],
   STUDENT: [

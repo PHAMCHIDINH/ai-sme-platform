@@ -4,8 +4,9 @@ import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { rankBySimilarity } from "@/lib/matching";
-import { Building2, CalendarDays, Sparkles } from "lucide-react";
+import { Building2, CalendarDays, Sparkles, Flame } from "lucide-react";
 import { ApplyButton } from "./apply-button";
+import { InvitationCard } from "./invitation-card";
 
 export default async function StudentProjectsPage() {
   const session = await auth();
@@ -47,6 +48,24 @@ export default async function StudentProjectsPage() {
     },
   });
 
+  let invitations: any[] = [];
+  if (profile) {
+    invitations = await prisma.application.findMany({
+      where: {
+        studentId: profile.id,
+        status: "INVITED",
+        initiatedBy: "SME",
+      },
+      include: {
+        project: {
+          include: {
+            sme: true,
+          },
+        },
+      },
+    });
+  }
+
   // Xếp hạng bằng AI similarity nếu có profile embedding
   type RankedProject = (typeof availableProjects)[number] & { matchScore: number };
   let rankedProjects: RankedProject[] = [];
@@ -59,75 +78,113 @@ export default async function StudentProjectsPage() {
   }
 
   return (
-    <div className="space-y-6 pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center">
-            Việc làm gợi ý <Sparkles className="w-5 h-5 ml-2 text-indigo-500" />
+    <div className="space-y-10 pb-20 fade-in">
+      {invitations.length > 0 && (
+        <div className="mb-4">
+          <h2 className="text-3xl font-black uppercase mb-6 flex items-center gap-3 bg-red-500 w-fit text-white px-4 py-2 border-4 border-black shadow-neo-sm transform -rotate-1">
+            <Flame className="w-8 h-8 fill-current text-yellow-300" /> THƯ CHÀO MỜI ĐỘC QUYỀN
           </h2>
-          <p className="text-muted-foreground text-sm">Các bài toán từ doanh nghiệp được AI phân tích độ phù hợp với bạn</p>
+          <div>
+            {invitations.map(inv => (
+              <InvitationCard key={inv.id} invitation={inv} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Brutalist Hero Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-2 border-black bg-lime-300 p-8 md:p-10 shadow-neo-md rounded-lg">
+        <div>
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-black flex items-center">
+            Việc làm gợi ý <Sparkles className="w-8 h-8 md:w-10 md:h-10 ml-3 text-black" />
+          </h2>
+          <p className="text-black font-semibold text-base mt-2 max-w-xl">
+            Các bài toán từ doanh nghiệp được AI phân tích độ phù hợp với bộ kỹ năng của bạn.
+          </p>
         </div>
       </div>
 
       {!profile?.embedding || profile.embedding.length === 0 ? (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-          ⚠️ Bạn chưa cập nhật kỹ năng đầy đủ. Hãy <Link href="/student/profile" className="font-bold underline">cập nhật Profile</Link> để AI có thể phân tích và gợi ý chính xác nhất.
+        <div className="p-6 bg-yellow-300 border-4 border-black shadow-neo-sm text-black font-black uppercase flex flex-col md:flex-row md:items-center gap-4 transform rotate-1 hover:-rotate-1 transition-transform">
+          <div className="text-5xl border-2 border-black bg-white rounded-full p-2 h-20 w-20 flex items-center justify-center -rotate-12 shadow-neo-sm">⚠️</div>
+          <div className="text-sm md:text-base leading-snug">
+            Bạn chưa chuẩn hóa kỹ năng trên hệ thống! <br className="hidden md:block"/>Hãy <Link href="/student/profile" className="underline decoration-4 underline-offset-4 bg-black text-white px-2 hover:bg-pink-400 hover:text-black transition-colors ml-1">cập nhật Profile</Link> ngay để AI có thể phân tích và gợi ý dự án đỉnh nhất cho bạn.
+          </div>
         </div>
       ) : null}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mt-8">
         {rankedProjects.length === 0 ? (
-          <div className="col-span-3 text-center py-12 text-muted-foreground">
-            Hiện chưa có dự án nào phù hợp hoặc đang mở. Vui lòng quay lại sau!
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col items-center justify-center py-20 px-4 border-2 border-black bg-white shadow-neo-lg rounded-lg text-center transform hover:-translate-y-1 transition-transform">
+            <h3 className="text-3xl md:text-4xl font-black mb-4 uppercase text-black">Rất tiếc!</h3>
+            <p className="text-black font-bold text-lg max-w-md">Hiện chưa có dự án nào đang mở hoặc phù hợp với bạn. Hãy rèn luyện thêm kỹ năng và quay lại sau nhé.</p>
           </div>
-        ) : rankedProjects.map((project) => (
-          <Card key={project.id} className="flex flex-col overflow-hidden bg-white/50 backdrop-blur border-none shadow-sm hover:shadow-md transition-all group">
-            <CardHeader className="pb-3 border-b bg-muted/20 relative">
+        ) : rankedProjects.map((project, index) => {
+          const bgColors = ["bg-lime-200", "bg-cyan-200", "bg-pink-200", "bg-yellow-200", "bg-violet-200", "bg-orange-200"];
+          const cardBgColor = bgColors[index % bgColors.length];
+          const hoverColor = cardBgColor.replace('bg-', 'hover:bg-');
+          const isHighMatch = project.matchScore >= 80;
 
-              {/* AI Match Badge */}
+          return (
+            <div 
+              key={project.id} 
+              className={`group flex flex-col ${cardBgColor} border-2 border-black rounded-lg shadow-neo-md hover:shadow-neo-lg transition-all hover:-translate-y-1 hover:-translate-x-1 divide-y-2 divide-black overflow-hidden relative`}
+            >
+              {/* AI Match Badge (Brutalist Sticker Style) */}
               {project.matchScore > 0 && (
-                <div className="absolute -top-3 -right-3 w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-black text-sm shadow-lg rotate-12 group-hover:rotate-0 transition-transform">
-                  <div className="-rotate-12 group-hover:rotate-0 transition-transform">
-                    {project.matchScore}%
-                  </div>
+                <div className={`absolute top-2 right-2 border-2 border-black px-3 py-1 font-black text-sm uppercase shadow-neo-sm transform rotate-6 transition-transform group-hover:rotate-12 z-10 ${isHighMatch ? 'bg-red-400 text-black' : 'bg-white text-black'}`}>
+                  {project.matchScore}% Phù hợp
                 </div>
               )}
 
-              <div className="flex justify-between items-start mb-2 pr-10">
-                <span className="text-xs font-semibold text-primary flex items-center bg-primary/10 px-2 py-1 rounded">
-                  <Building2 className="w-3 h-3 mr-1" /> {project.sme.companyName}
-                </span>
-              </div>
-              <CardTitle className="line-clamp-2 text-lg leading-tight group-hover:text-primary transition-colors">
-                {project.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow pt-4">
-              <CardDescription className="line-clamp-3 mb-4 text-sm leading-relaxed">
-                {project.expectedOutput}
-              </CardDescription>
-
-              <div className="flex flex-wrap gap-2 mb-4">
-                {project.requiredSkills.slice(0, 3).map((skill: string) => (
-                  <Badge key={skill} variant="secondary" className="text-[10px] font-normal cursor-default">
-                    {skill}
-                  </Badge>
-                ))}
-                {project.requiredSkills.length > 3 && (
-                  <Badge variant="secondary" className="text-[10px] font-normal">+{project.requiredSkills.length - 3}</Badge>
-                )}
+              {/* Header Section */}
+              <div className="p-5 bg-white pt-10">
+                <div className="flex justify-between items-start mb-3">
+                  <span className="text-xs font-bold uppercase text-black flex items-center bg-gray-200 border-2 border-black px-2 py-1 shadow-neo-sm rounded-md">
+                    <Building2 className="w-3 h-3 mr-1" /> {project.sme.companyName}
+                  </span>
+                </div>
+                <h3 className="line-clamp-2 text-xl font-black uppercase tracking-tight text-black group-hover:underline decoration-4 underline-offset-4">
+                  {project.title}
+                </h3>
               </div>
 
-              <div className="flex items-center text-xs text-muted-foreground">
-                <CalendarDays className="w-3.5 h-3.5 mr-1" />
-                Thời lượng: <span className="font-medium ml-1 text-foreground">{project.duration}</span>
+              {/* Body Section */}
+              <div className="p-5 flex-grow bg-white flex flex-col justify-between">
+                <p className="line-clamp-3 text-sm font-semibold text-black/80 mb-4 leading-relaxed">
+                  {project.expectedOutput}
+                </p>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {project.requiredSkills.slice(0, 3).map((skill: string) => (
+                    <span key={skill} className="text-xs font-bold uppercase tracking-wider border-2 border-black px-2 py-1 bg-yellow-100 text-black shadow-neo-sm rounded-md">
+                      {skill}
+                    </span>
+                  ))}
+                  {project.requiredSkills.length > 3 && (
+                    <span className="text-xs font-bold uppercase tracking-wider border-2 border-black px-2 py-1 bg-gray-200 text-black shadow-neo-sm rounded-md">
+                      +{project.requiredSkills.length - 3}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center text-xs font-black uppercase text-black border-2 border-black bg-white w-fit px-3 py-1.5 shadow-neo-sm rounded-md mt-auto">
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  {project.duration}
+                </div>
               </div>
-            </CardContent>
-            <CardFooter className="pt-0 pb-4 px-6 mt-auto flex gap-2">
-              <ApplyButton matchScore={project.matchScore} projectId={project.id} />
-            </CardFooter>
-          </Card>
-        ))}
+
+              {/* Footer Section */}
+              <div className="w-full flex">
+                <ApplyButton 
+                  projectId={project.id} 
+                  matchScore={project.matchScore} 
+                  className={`w-full bg-white text-black text-base ${hoverColor} transition-colors border-0 h-16 uppercase font-black`}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

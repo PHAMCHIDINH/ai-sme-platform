@@ -12,7 +12,7 @@ type ApplyButtonProps = {
   matchScore: number;
 };
 
-export function ApplyButton({ projectId, matchScore }: ApplyButtonProps) {
+export function ApplyButton({ projectId, matchScore, className }: ApplyButtonProps & { className?: string }) {
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleApply() {
@@ -20,7 +20,7 @@ export function ApplyButton({ projectId, matchScore }: ApplyButtonProps) {
     try {
       const result = await applyProject(projectId, matchScore);
 
-      if (result.error) {
+      if (result?.error) {
         toast.error(result.error);
       } else {
         toast.success("Ứng tuyển thành công.");
@@ -29,7 +29,7 @@ export function ApplyButton({ projectId, matchScore }: ApplyButtonProps) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Không thể ứng tuyển lúc này. Vui lòng thử lại.",
+          : "Không thể ứng tuyển lúc này. Vui lòng thử lại."
       );
     } finally {
       setIsLoading(false);
@@ -38,18 +38,18 @@ export function ApplyButton({ projectId, matchScore }: ApplyButtonProps) {
 
   return (
     <Button
-      className="flex-1 rounded-xl shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white"
+      className={className || "flex-1 rounded-none shadow-none border-0 text-base font-black uppercase hover:bg-black hover:text-white transition-colors h-14"}
       disabled={isLoading}
       onClick={handleApply}
       type="button"
     >
       {isLoading ? (
         <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
           Đang gửi...
         </>
       ) : (
-        "Ứng tuyển"
+        "Ứng tuyển ngay"
       )}
     </Button>
   );

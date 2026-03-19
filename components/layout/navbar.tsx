@@ -47,7 +47,15 @@ export function Navbar() {
           <Link href="#benefits" className="hover:underline">
             Lợi ích
           </Link>
-          <span>Cách hoạt động</span>
+          <Link href="/about" className="hover:underline">
+            Về chúng tôi
+          </Link>
+          <Link href="/quality-assurance" className="hover:underline text-orange-600">
+            Quy trình QA
+          </Link>
+          <Link href="/ai-standardization" className="hover:underline text-rose-600">
+            AI Chuẩn hóa
+          </Link>
         </nav>
 
         <div className="flex items-center gap-2">
