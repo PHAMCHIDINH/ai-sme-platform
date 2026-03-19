@@ -1,22 +1,23 @@
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, PlusCircle, Users } from "lucide-react";
 
 export default async function SMEProjectsPage() {
   const session = await auth();
+  const smeUserId = getSessionUserIdByRole(session, "SME");
 
-  if (!session || session.user.role !== "SME") {
+  if (!smeUserId) {
     return <div>Unauthorized</div>;
   }
 
   const smeProfile = await prisma.sMEProfile.findUnique({
-    where: { userId: session.user.id }
+    where: { userId: smeUserId }
   });
 
   const projects = smeProfile ? await prisma.project.findMany({

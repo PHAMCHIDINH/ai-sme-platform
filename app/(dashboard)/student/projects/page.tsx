@@ -1,19 +1,33 @@
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { rankBySimilarity } from "@/lib/matching";
 import { Building2, CalendarDays, Sparkles, Flame } from "lucide-react";
 import { ApplyButton } from "./apply-button";
 import { InvitationCard } from "./invitation-card";
 
+type StudentInvitation = {
+  id: string;
+  projectId: string;
+  project: {
+    title: string;
+    expectedOutput: string;
+    budget: string | null;
+    duration: string;
+    sme: {
+      companyName: string;
+    };
+  };
+};
+
 export default async function StudentProjectsPage() {
   const session = await auth();
-  if (!session || session.user.role !== "STUDENT") return <div>Unauthorized</div>;
+  const studentUserId = getSessionUserIdByRole(session, "STUDENT");
+  if (!studentUserId) return <div>Unauthorized</div>;
 
   const profile = await prisma.studentProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: studentUserId },
     select: {
       id: true,
       embedding: true,
@@ -48,7 +62,7 @@ export default async function StudentProjectsPage() {
     },
   });
 
-  let invitations: any[] = [];
+  let invitations: StudentInvitation[] = [];
   if (profile) {
     invitations = await prisma.application.findMany({
       where: {

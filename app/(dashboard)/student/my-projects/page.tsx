@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Clock, CheckCircle2, FileText, ListTodo } from "lucide-react";
 
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -156,13 +157,16 @@ async function getOwnedProgressEntry(progressId: string, userId: string) {
 
 export default async function StudentMyProjectsPage() {
   const session = await auth();
-  if (!session || session.user.role !== "STUDENT") return <div>Unauthorized</div>;
+  const studentUserId = getSessionUserIdByRole(session, "STUDENT");
+  if (!studentUserId) return <div>Unauthorized</div>;
 
   async function addMilestone(progressId: string, formData: FormData): Promise<ActionResult> {
     "use server";
 
     const activeSession = await auth();
-    if (!activeSession || activeSession.user.role !== "STUDENT") {
+    const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
+
+    if (!activeStudentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
@@ -171,7 +175,7 @@ export default async function StudentMyProjectsPage() {
       return { error: "Milestone không được để trống." };
     }
 
-    const result = await getOwnedProgressEntry(progressId, activeSession.user.id);
+    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
     if ("error" in result) {
       return result;
     }
@@ -211,7 +215,9 @@ export default async function StudentMyProjectsPage() {
     "use server";
 
     const activeSession = await auth();
-    if (!activeSession || activeSession.user.role !== "STUDENT") {
+    const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
+
+    if (!activeStudentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
@@ -220,7 +226,7 @@ export default async function StudentMyProjectsPage() {
       return { error: "Nội dung cập nhật không được để trống." };
     }
 
-    const result = await getOwnedProgressEntry(progressId, activeSession.user.id);
+    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
     if ("error" in result) {
       return result;
     }
@@ -264,7 +270,9 @@ export default async function StudentMyProjectsPage() {
     "use server";
 
     const activeSession = await auth();
-    if (!activeSession || activeSession.user.role !== "STUDENT") {
+    const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
+
+    if (!activeStudentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
@@ -279,7 +287,7 @@ export default async function StudentMyProjectsPage() {
       return { error: "Link bàn giao không hợp lệ." };
     }
 
-    const result = await getOwnedProgressEntry(progressId, activeSession.user.id);
+    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
     if ("error" in result) {
       return result;
     }
@@ -321,11 +329,13 @@ export default async function StudentMyProjectsPage() {
     "use server";
 
     const activeSession = await auth();
-    if (!activeSession || activeSession.user.role !== "STUDENT") {
+    const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
+
+    if (!activeStudentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
-    const result = await getOwnedProgressEntry(progressId, activeSession.user.id);
+    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
     if ("error" in result) {
       return result;
     }
@@ -348,7 +358,7 @@ export default async function StudentMyProjectsPage() {
         evaluations: {
           where: {
             type: "STUDENT_TO_SME",
-            evaluatorId: activeSession.user.id,
+            evaluatorId: activeStudentUserId,
           },
           select: { id: true },
           take: 1,
@@ -385,7 +395,7 @@ export default async function StudentMyProjectsPage() {
     await prisma.evaluation.create({
       data: {
         projectId,
-        evaluatorId: activeSession.user.id,
+        evaluatorId: activeStudentUserId,
         evaluateeId: project.sme.userId,
         type: "STUDENT_TO_SME",
         outputQuality,
@@ -404,7 +414,7 @@ export default async function StudentMyProjectsPage() {
   }
 
   const profile = await prisma.studentProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: studentUserId },
   });
 
   if (!profile) return <div>Hãy cập nhật profile trước.</div>;
@@ -418,7 +428,7 @@ export default async function StudentMyProjectsPage() {
           evaluations: {
             where: {
               type: "STUDENT_TO_SME",
-              evaluatorId: session.user.id,
+              evaluatorId: studentUserId,
             },
             select: { id: true },
             take: 1,

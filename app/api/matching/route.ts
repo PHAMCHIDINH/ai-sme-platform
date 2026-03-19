@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
+import { handlePrismaApiError, unauthorizedResponse } from "@/lib/http/prisma-api";
 import { rankBySimilarity } from "@/lib/matching";
 import { prisma } from "@/lib/prisma";
 
@@ -10,39 +11,19 @@ const schema = z.object({
   projectId: z.string().cuid(),
 });
 
-function handlePrismaError(error: unknown, fallbackMessage: string) {
-  if (error instanceof Prisma.PrismaClientInitializationError) {
-    return NextResponse.json(
-      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
-      { status: 503 },
-    );
-  }
-
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    (error.code === "P2021" || error.code === "P2022")
-  ) {
-    return NextResponse.json(
-      { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
-      { status: 500 },
-    );
-  }
-
-  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
-}
-
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const smeUserId = getSessionUserIdByRole(session, "SME");
+    if (!smeUserId) {
+      if (session?.user) {
+        return NextResponse.json(
+          { error: "Chỉ doanh nghiệp mới có quyền dùng API matching." },
+          { status: 403 },
+        );
+      }
 
-    if (session.user.role !== "SME") {
-      return NextResponse.json(
-        { error: "Chỉ doanh nghiệp mới có quyền dùng API matching." },
-        { status: 403 },
-      );
+      return unauthorizedResponse();
     }
 
     const body = await request.json();
@@ -72,7 +53,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    if (project.sme.userId !== session.user.id) {
+    if (project.sme.userId !== smeUserId) {
       return NextResponse.json(
         { error: "Bạn không có quyền xem matching của dự án này." },
         { status: 403 },
@@ -111,6 +92,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ projectId: project.id, candidates: ranked });
   } catch (error) {
     console.error("Matching API Error:", error);
-    return handlePrismaError(error, "Không thể lấy danh sách ứng viên lúc này.");
+    return handlePrismaApiError(error, "Không thể lấy danh sách ứng viên lúc này.");
   }
 }

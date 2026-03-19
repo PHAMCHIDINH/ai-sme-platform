@@ -338,11 +338,16 @@ Luôn luôn đặt câu hỏi ngắn gọn thực tế. Liên tục trích xuấ
 3. Ngân sách và Thời gian.
 Nếu dữ liệu đã đầy đủ, hãy tạo message thông báo "Mình đã điền đủ thông tin form bên cạnh, bạn hãy kiểm tra lại và bấm Đăng Dự Án nhé!" và suggestions rỗng.`;
 
+    const chatMessages = messages.map((message): { role: "assistant" | "user"; content: string } => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: message.content,
+    }));
+
     const response = await openaiInstance.chat.completions.create({
       model: chatModelStr,
       messages: [
         { role: "system", content: systemPrompt },
-        ...messages.map((message) => ({ role: message.role, content: message.content } as any)),
+        ...chatMessages,
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,

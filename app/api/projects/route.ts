@@ -1,50 +1,18 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
+import { getSessionUserId, getSessionUserIdByRole } from "@/lib/auth/session";
+import { handlePrismaApiError, unauthorizedResponse } from "@/lib/http/prisma-api";
 import { generateEmbedding } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
 import { projectFormSchema } from "@/lib/validators/project";
 
-function getSessionUserId(session: Awaited<ReturnType<typeof auth>>, role?: "SME" | "STUDENT") {
-  if (!session?.user?.id) {
-    return null;
-  }
-
-  if (role && session.user.role !== role) {
-    return null;
-  }
-
-  return session.user.id;
-}
-
-function handlePrismaError(error: unknown, fallbackMessage: string) {
-  if (error instanceof Prisma.PrismaClientInitializationError) {
-    return NextResponse.json(
-      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
-      { status: 503 },
-    );
-  }
-
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    (error.code === "P2021" || error.code === "P2022")
-  ) {
-    return NextResponse.json(
-      { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
-      { status: 500 },
-    );
-  }
-
-  return NextResponse.json({ error: fallbackMessage }, { status: 500 });
-}
-
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    const smeUserId = getSessionUserId(session, "SME");
+    const smeUserId = getSessionUserIdByRole(session, "SME");
 
     if (!smeUserId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const body = await req.json();
@@ -105,7 +73,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ project });
   } catch (error) {
     console.error("Create Project Error:", error);
-    return handlePrismaError(error, "Failed to create project");
+    return handlePrismaApiError(error, "Failed to create project");
   }
 }
 
@@ -115,7 +83,7 @@ export async function GET() {
     const userId = getSessionUserId(session);
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     if (session.user.role === "SME") {
@@ -142,6 +110,6 @@ export async function GET() {
     
   } catch (error) {
     console.error("Get Projects Error:", error);
-    return handlePrismaError(error, "Server Error");
+    return handlePrismaApiError(error, "Server Error");
   }
 }

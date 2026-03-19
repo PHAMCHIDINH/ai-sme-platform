@@ -3,6 +3,7 @@ import { ProjectStatus } from "@prisma/client";
 import { FolderKanban, Users, Clock, PlusCircle, Building2 } from "lucide-react";
 
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,12 +34,14 @@ function projectStatusClass(status: ProjectStatus) {
 
 export default async function SMEDashboardPage() {
   const session = await auth();
-  if (!session || session.user.role !== "SME") {
+  const smeUserId = getSessionUserIdByRole(session, "SME");
+
+  if (!smeUserId) {
     return <div>Unauthorized</div>;
   }
 
   const smeProfile = await prisma.sMEProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: smeUserId },
     select: {
       id: true,
       companyName: true,

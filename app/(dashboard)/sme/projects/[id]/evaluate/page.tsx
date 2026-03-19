@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,8 +28,9 @@ function formatCreatedAt(value: Date) {
 
 export default async function EvaluatePage({ params }: { params: { id: string } }) {
   const session = await auth();
+  const smeUserId = getSessionUserIdByRole(session, "SME");
 
-  if (!session || session.user.role !== "SME") {
+  if (!smeUserId) {
     return <div>Unauthorized</div>;
   }
 
@@ -62,7 +64,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
     return notFound();
   }
 
-  if (project.sme.userId !== session.user.id) {
+  if (project.sme.userId !== smeUserId) {
     return <div>Unauthorized access to this project</div>;
   }
 
@@ -78,7 +80,9 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
     "use server";
 
     const activeSession = await auth();
-    if (!activeSession || activeSession.user.role !== "SME") {
+    const activeSmeUserId = getSessionUserIdByRole(activeSession, "SME");
+
+    if (!activeSmeUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
@@ -99,7 +103,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
       },
     });
 
-    if (!ownedProject || ownedProject.sme.userId !== activeSession.user.id) {
+    if (!ownedProject || ownedProject.sme.userId !== activeSmeUserId) {
       return { error: "Bạn không có quyền đánh giá dự án này." };
     }
 
@@ -132,7 +136,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
     await prisma.evaluation.create({
       data: {
         projectId: ownedProject.id,
-        evaluatorId: activeSession.user.id,
+        evaluatorId: activeSmeUserId,
         evaluateeId: ownedProject.progress.student.userId,
         type: "SME_TO_STUDENT",
         outputQuality,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
+import { handlePrismaApiError, unauthorizedResponse } from "@/lib/http/prisma-api";
 import { canGenerateEmbedding, generateEmbedding } from "@/lib/openai";
 import { prisma } from "@/lib/prisma";
 import { studentProfileSchema } from "@/lib/validators/student-profile";
@@ -17,44 +18,13 @@ function joinList(value: string[]) {
   return value.join(", ");
 }
 
-function getStudentUserId(session: Awaited<ReturnType<typeof auth>>) {
-  if (!session || session.user.role !== "STUDENT" || !session.user.id) {
-    return null;
-  }
-
-  return session.user.id;
-}
-
-function handlePrismaError(error: unknown, action: "load" | "update") {
-  if (error instanceof Prisma.PrismaClientInitializationError) {
-    return NextResponse.json(
-      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
-      { status: 503 },
-    );
-  }
-
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    if (error.code === "P2022") {
-      return NextResponse.json(
-        { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
-        { status: 500 },
-      );
-    }
-  }
-
-  return NextResponse.json(
-    { error: action === "load" ? "Failed to load profile" : "Failed to update profile" },
-    { status: 500 },
-  );
-}
-
 export async function GET() {
   try {
     const session = await auth();
-    const userId = getStudentUserId(session);
+    const userId = getSessionUserIdByRole(session, "STUDENT");
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const profile = await prisma.studentProfile.findUnique({
@@ -91,17 +61,17 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Get Student Profile Error:", error);
-    return handlePrismaError(error, "load");
+    return handlePrismaApiError(error, "Failed to load profile");
   }
 }
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    const userId = getStudentUserId(session);
+    const userId = getSessionUserIdByRole(session, "STUDENT");
 
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return unauthorizedResponse();
     }
 
     const body = await req.json();
@@ -199,6 +169,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, profile });
   } catch (error) {
     console.error("Update Student Profile Error:", error);
-    return handlePrismaError(error, "update");
+    return handlePrismaApiError(error, "Failed to update profile");
   }
 }

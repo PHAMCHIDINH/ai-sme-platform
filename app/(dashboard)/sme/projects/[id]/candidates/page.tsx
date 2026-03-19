@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -10,9 +11,16 @@ import { rankBySimilarity } from "@/lib/matching";
 import { CandidateActions } from "./candidate-actions";
 import { InviteAction } from "./invite-action";
 
+type ProjectApplication = {
+  studentId: string;
+  status: "PENDING" | "INVITED" | "ACCEPTED" | "REJECTED";
+  initiatedBy: "SME" | "STUDENT";
+};
+
 export default async function CandidatesPage({ params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session || session.user.role !== "SME") return <div>Unauthorized</div>;
+  const smeUserId = getSessionUserIdByRole(session, "SME");
+  if (!smeUserId) return <div>Unauthorized</div>;
 
   const project = await prisma.project.findUnique({
     where: { id: params.id },
@@ -29,10 +37,10 @@ export default async function CandidatesPage({ params }: { params: { id: string 
   });
 
   if (!project) return notFound();
-  if (project.sme.userId !== session.user.id) return <div>Unauthorized</div>;
+  if (project.sme.userId !== smeUserId) return <div>Unauthorized</div>;
 
-  const applicantIds = project.applications.map((app: any) => app.studentId);
-  const applicationMap = new Map(project.applications.map((app: any) => [app.studentId, app]));
+  const applicantIds = project.applications.map((app) => app.studentId);
+  const applicationMap = new Map(project.applications.map((app) => [app.studentId, app]));
 
   const applicantsPool = applicantIds.length
     ? await prisma.studentProfile.findMany({
@@ -78,9 +86,9 @@ export default async function CandidatesPage({ params }: { params: { id: string 
     },
   });
 
-  const applicants = rankBySimilarity(project.embedding, applicantsPool).map((s: any) => ({
-    ...s,
-    applicationData: applicationMap.get(s.id),
+  const applicants = rankBySimilarity(project.embedding, applicantsPool).map((student) => ({
+    ...student,
+    applicationData: applicationMap.get(student.id),
   }));
   const suggestions = rankBySimilarity(project.embedding, suggestionsPool).slice(0, 5);
 
@@ -141,10 +149,7 @@ type CandidateStudent = {
   skills: string[];
   embedding: number[];
   matchScore: number;
-  applicationData?: {
-    status: string;
-    initiatedBy: string;
-  };
+  applicationData?: ProjectApplication;
 };
 
 function StudentCard({ student, projectId }: { student: CandidateStudent, projectId: string }) {

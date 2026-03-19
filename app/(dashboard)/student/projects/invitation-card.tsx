@@ -6,7 +6,20 @@ import { Check, X, Loader2, Building2, Flame } from "lucide-react";
 import { respondToInvitation } from "@/app/actions/application";
 import { Button } from "@/components/ui/button";
 
-export function InvitationCard({ invitation }: { invitation: any }) {
+type Invitation = {
+  projectId: string;
+  project: {
+    title: string;
+    expectedOutput: string;
+    budget: string | null;
+    duration: string;
+    sme: {
+      companyName: string;
+    };
+  };
+};
+
+export function InvitationCard({ invitation }: { invitation: Invitation }) {
   const respondMutation = useMutation({
     mutationFn: async (status: "ACCEPTED" | "REJECTED") => {
       const res = await respondToInvitation(invitation.projectId, status);

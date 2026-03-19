@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -129,8 +130,9 @@ export default async function SMEProjectDetailPage({
   params: { id: string };
 }) {
   const session = await auth();
+  const smeUserId = getSessionUserIdByRole(session, "SME");
 
-  if (!session || session.user.role !== "SME") {
+  if (!smeUserId) {
     return <div>Unauthorized</div>;
   }
 
@@ -139,7 +141,9 @@ export default async function SMEProjectDetailPage({
 
     try {
       const activeSession = await auth();
-      if (!activeSession || activeSession.user.role !== "SME") {
+      const activeSmeUserId = getSessionUserIdByRole(activeSession, "SME");
+
+      if (!activeSmeUserId) {
         return { error: "Bạn không có quyền thực hiện thao tác này." };
       }
 
@@ -151,7 +155,7 @@ export default async function SMEProjectDetailPage({
         },
       });
 
-      if (!ownedProject || ownedProject.sme.userId !== activeSession.user.id) {
+      if (!ownedProject || ownedProject.sme.userId !== activeSmeUserId) {
         return { error: "Bạn không có quyền nghiệm thu dự án này." };
       }
 
@@ -209,7 +213,7 @@ export default async function SMEProjectDetailPage({
     return notFound();
   }
 
-  if (project.sme.userId !== session.user.id) {
+  if (project.sme.userId !== smeUserId) {
     return <div>Unauthorized access to this project</div>;
   }
 

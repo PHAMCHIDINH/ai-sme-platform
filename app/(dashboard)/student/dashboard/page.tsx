@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,42 +8,59 @@ import { Layers, FolderKanban, Star, Award, Code2 } from "lucide-react";
 
 export default async function StudentDashboardPage() {
   const session = await auth();
-  if (!session || session.user.role !== "STUDENT") return <div>Unauthorized</div>;
+  const studentUserId = getSessionUserIdByRole(session, "STUDENT");
+  if (!studentUserId) return <div>Unauthorized</div>;
 
-  const profile = await prisma.studentProfile.findUnique({
-    where: { userId: session.user.id },
-    select: {
-      skills: true,
-      _count: {
+  let profile:
+    | {
+        skills: string[];
+        _count: { applications: number };
+        progressEntries: { status: "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "COMPLETED" }[];
+      }
+    | null = null;
+  let avgRating = "Chưa có";
+
+  try {
+    const [profileResult, evaluationSummary] = await Promise.all([
+      prisma.studentProfile.findUnique({
+        where: { userId: studentUserId },
         select: {
-          applications: true,
+          skills: true,
+          _count: {
+            select: {
+              applications: true,
+            },
+          },
+          progressEntries: {
+            select: {
+              status: true,
+            },
+          },
         },
-      },
-      progressEntries: {
-        select: {
-          status: true,
+      }),
+      prisma.evaluation.aggregate({
+        where: { evaluateeId: studentUserId, type: "SME_TO_STUDENT" },
+        _avg: {
+          overallFit: true,
         },
-      },
-    },
-  });
+        _count: {
+          overallFit: true,
+        },
+      }),
+    ]);
+
+    profile = profileResult;
+    avgRating =
+      evaluationSummary._count.overallFit > 0 && evaluationSummary._avg.overallFit !== null
+        ? evaluationSummary._avg.overallFit.toFixed(1)
+        : "Chưa có";
+  } catch (error) {
+    console.error("StudentDashboardPage load error:", error);
+  }
 
   const activeProjects = profile?.progressEntries.filter(p => p.status !== "COMPLETED").length || 0;
   const completedProjects = profile?.progressEntries.filter(p => p.status === "COMPLETED").length || 0;
-  
-  // Tổng rating
-  const evaluationSummary = await prisma.evaluation.aggregate({
-    where: { evaluateeId: session.user.id, type: "SME_TO_STUDENT" },
-    _avg: {
-      overallFit: true,
-    },
-    _count: {
-      overallFit: true,
-    },
-  });
-  
-  const avgRating = evaluationSummary._count.overallFit > 0 && evaluationSummary._avg.overallFit !== null
-    ? evaluationSummary._avg.overallFit.toFixed(1)
-    : "Chưa có";
+  const profileCompletion = profile?.skills.length ? 80 : 30;
 
   return (
     <div className="space-y-6">
@@ -123,10 +141,13 @@ export default async function StudentDashboardPage() {
             <div className="p-4 bg-muted/40 rounded-xl">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium">Độ hoàn thiện Profile</span>
-                <span className="text-sm font-bold text-primary">{profile?.skills.length ? "80%" : "30%"}</span>
+                <span className="text-sm font-bold text-primary">{profileCompletion}%</span>
               </div>
               <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                <div className={`h-full bg-primary rounded-full w-[${profile?.skills.length ? '80' : '30'}%]`} />
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: `${profileCompletion}%` }}
+                />
               </div>
             </div>
             {!profile?.skills.length && (

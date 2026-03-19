@@ -22,7 +22,7 @@ export default function QualityAssurancePage() {
             <span className="bg-orange-300 px-4 mt-2 inline-block border-4 border-black shadow-neo-sm">Bảo Chứng Năng Lực</span>
           </h1>
           <p className="max-w-2xl mx-auto text-lg md:text-xl font-bold mt-4 text-black/80">
-            Giái quyết triệt để nỗi lo "Năng lực trên CV ảo" của Doanh nghiệp bằng hệ thống Test đầu vào và đánh giá đa chiều minh bạch.
+            Giái quyết triệt để nỗi lo &quot;Năng lực trên CV ảo&quot; của Doanh nghiệp bằng hệ thống Test đầu vào và đánh giá đa chiều minh bạch.
           </p>
         </section>
 
@@ -30,7 +30,7 @@ export default function QualityAssurancePage() {
         <section className="grid md:grid-cols-2 gap-8 border-4 border-black bg-white shadow-neo-lg p-0 overflow-hidden">
           <div className="bg-red-400 p-8 md:p-12 border-b-4 md:border-b-0 md:border-r-4 border-black flex flex-col justify-center">
             <h2 className="text-3xl font-black uppercase mb-4 text-white drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">
-              Vấn Đề: CV "Thổi Phồng"
+              Vấn Đề: CV &quot;Thổi Phồng&quot;
             </h2>
             <p className="text-lg font-bold">
               Công nghệ AI Vector Matching chỉ ghép nối dựa trên những gì sinh viên <strong>tự khai báo</strong>. Điều này mang lại rủi ro cho SME khi giao dự án thật cho những bạn năng lực thực tế chưa đạt yêu cầu, làm mất thời gian và chi phí của cả hai bên.
@@ -41,7 +41,7 @@ export default function QualityAssurancePage() {
               Giải Pháp: Quy Trình QA
             </h2>
             <p className="text-lg font-bold">
-              Bắt buộc sinh viên trải qua <strong>Test Đầu Vào (Pre-Assessment)</strong> trước khi được cấp "Huy hiệu Năng Lực" (Verified Badge). Lọc phễu chất lượng ngay từ cửa ngõ để SME an tâm giao việc.
+              Bắt buộc sinh viên trải qua <strong>Test Đầu Vào (Pre-Assessment)</strong> trước khi được cấp &quot;Huy hiệu Năng Lực&quot; (Verified Badge). Lọc phễu chất lượng ngay từ cửa ngõ để SME an tâm giao việc.
             </p>
           </div>
         </section>
@@ -84,7 +84,7 @@ export default function QualityAssurancePage() {
               <Medal className="w-10 h-10 mb-4 text-black" />
               <h3 className="text-xl font-black uppercase mb-3 text-black rounded">Verified Badging</h3>
               <p className="font-semibold text-sm leading-relaxed">
-                Vượt qua bài test với điểm số chuẩn, sinh viên nhận huy hiệu <strong>"Verified Talent"</strong> hiển thị công khai trên hồ sơ, tăng điểm uy tín.
+                Vượt qua bài test với điểm số chuẩn, sinh viên nhận huy hiệu <strong>&quot;Verified Talent&quot;</strong> hiển thị công khai trên hồ sơ, tăng điểm uy tín.
               </p>
             </div>
 
@@ -96,7 +96,7 @@ export default function QualityAssurancePage() {
               <Microscope className="w-10 h-10 mb-4 text-black" />
               <h3 className="text-xl font-black uppercase mb-3 text-black rounded">Quality Matching</h3>
               <p className="font-semibold text-sm leading-relaxed">
-                Khi SME đăng dự án, họ có thể bật tùy chọn <strong>"Chỉ nhận ứng viên Verified"</strong>. AI sẽ tinh chỉnh trọng số để gợi ý nhân sự sát nhất thực tế.
+                Khi SME đăng dự án, họ có thể bật tùy chọn <strong>&quot;Chỉ nhận ứng viên Verified&quot;</strong>. AI sẽ tinh chỉnh trọng số để gợi ý nhân sự sát nhất thực tế.
               </p>
             </div>
 
@@ -123,8 +123,8 @@ export default function QualityAssurancePage() {
               </h3>
               <ul className="space-y-3 font-semibold list-disc list-inside">
                 <li>Biết được năng lực thị trường của mình đang ở đâu.</li>
-                <li>Huy hiệu "Verified" là một điểm cộng cực lớn vào CV cá nhân sau này.</li>
-                <li>Sự công bằng: Những sinh viên có năng lực thực sự sẽ nổi bật, tránh tình trạng bị "chìm lấp" bởi những hồ sơ ảo bóng bẩy.</li>
+                <li>Huy hiệu &quot;Verified&quot; là một điểm cộng cực lớn vào CV cá nhân sau này.</li>
+                <li>Sự công bằng: Những sinh viên có năng lực thực sự sẽ nổi bật, tránh tình trạng bị &quot;chìm lấp&quot; bởi những hồ sơ ảo bóng bẩy.</li>
               </ul>
             </div>
           </div>

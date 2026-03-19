@@ -35,7 +35,7 @@ export default function AIStandardizationPage() {
             </div>
             <div className="bg-yellow-100 border-2 border-dashed border-black p-6 font-mono text-sm relative">
               <span className="absolute -top-3 left-4 bg-white border-2 border-black px-2 text-xs font-bold uppercase">Yêu cầu từ Chủ Doanh Nghiệp</span>
-              "Em ơi làm cho anh cái app bán hàng giao diện đẹp đẹp giống Shopee nhé. Kinh phí tầm 5 triệu, tháng sau xong. Tính năng đơn giản thôi, có giỏ hàng, nạp thẻ, tích điểm, AI chatbot tư vấn..."
+              &quot;Em ơi làm cho anh cái app bán hàng giao diện đẹp đẹp giống Shopee nhé. Kinh phí tầm 5 triệu, tháng sau xong. Tính năng đơn giản thôi, có giỏ hàng, nạp thẻ, tích điểm, AI chatbot tư vấn...&quot;
             </div>
             <p className="mt-6 text-lg font-bold text-black/70">
               SME hiểu rất rõ họ muốn thu về lợi ích gì, nhưng lại <strong>thiếu từ vựng kỹ thuật</strong> để mô tả định lượng quy mô phần mềm. Hệ quả: Báo giá sai, làm sai yêu cầu, gãy đổ dự án giữa chừng.

@@ -16,12 +16,17 @@ import { inviteStudent } from "@/app/actions/application";
 
 type Student = {
   id: string;
-  name: string;
   university: string;
   major: string;
   skills: string[];
   matchScore?: number;
   user: { name: string; email: string };
+};
+
+type ProjectLite = {
+  id: string;
+  title: string;
+  status: "DRAFT" | "OPEN" | "IN_PROGRESS" | "SUBMITTED" | "COMPLETED";
 };
 
 export default function SmeStudentsPage() {
@@ -41,13 +46,14 @@ export default function SmeStudentsPage() {
   });
 
   // Fetch SME's projects to populate the modal select
-  const { data: myProjects } = useQuery({
+  const { data: myProjects } = useQuery<ProjectLite[]>({
     queryKey: ["sme-projects-lite"],
     queryFn: async () => {
       const res = await fetch("/api/projects");
       if (!res.ok) return [];
-      const data = await res.json();
-      return data.filter((p: any) => p.status === "OPEN");
+      const payload = (await res.json()) as { projects?: ProjectLite[] };
+      const projects = Array.isArray(payload.projects) ? payload.projects : [];
+      return projects.filter((project) => project.status === "OPEN");
     },
   });
 
@@ -168,7 +174,7 @@ export default function SmeStudentsPage() {
                 className="w-full border-2 border-black p-3 font-bold focus:outline-none focus:ring-2 ring-emerald-400 bg-gray-50"
               >
                 <option value="" disabled>-- Chọn dự án mở --</option>
-                {myProjects?.map((p: any) => (
+                {myProjects?.map((p) => (
                   <option key={p.id} value={p.id}>{p.title}</option>
                 ))}
               </select>

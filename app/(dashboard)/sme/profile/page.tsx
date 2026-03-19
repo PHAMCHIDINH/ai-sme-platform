@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { smeProfileSchema, type SmeProfileInput } from "@/lib/validators/sme-profile";
 import { SmeProfileForm } from "./sme-profile-form";
@@ -12,12 +13,14 @@ type ActionResult = {
 
 export default async function SmeProfilePage() {
   const session = await auth();
-  if (!session || session.user.role !== "SME") {
+  const smeUserId = getSessionUserIdByRole(session, "SME");
+
+  if (!smeUserId) {
     return <div>Unauthorized</div>;
   }
 
   const existingProfile = await prisma.sMEProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: smeUserId },
     select: {
       companyName: true,
       industry: true,
@@ -37,7 +40,9 @@ export default async function SmeProfilePage() {
     "use server";
 
     const activeSession = await auth();
-    if (!activeSession || activeSession.user.role !== "SME") {
+    const activeSmeUserId = getSessionUserIdByRole(activeSession, "SME");
+
+    if (!activeSmeUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
     }
 
@@ -53,10 +58,10 @@ export default async function SmeProfilePage() {
     }
 
     await prisma.sMEProfile.upsert({
-      where: { userId: activeSession.user.id },
+      where: { userId: activeSmeUserId },
       update: parsed.data,
       create: {
-        userId: activeSession.user.id,
+        userId: activeSmeUserId,
         ...parsed.data,
       },
     });

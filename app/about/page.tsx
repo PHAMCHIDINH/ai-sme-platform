@@ -94,7 +94,7 @@ export default function AboutPage() {
           <div className="flex-1">
             <h2 className="text-4xl font-black uppercase mb-4 text-black">Về Nhóm Phát Triển</h2>
             <p className="text-xl font-bold bg-white p-1 inline-block border-2 border-black rotate-1">
-              "Build with ♥️ and AI for Vietnamese Students"
+              &quot;Build with ♥️ and AI for Vietnamese Students&quot;
             </p>
             <p className="mt-6 text-lg font-medium max-w-xl">
               Dự án này được lên ý tưởng và hiện thực hóa như một mô hình sàn giao dịch <strong>Niche B2C/B2B</strong> nhằm thử nghiệm sức mạnh của AI trong việc thay thế nhân sự trung gian (BA, Headhunter).

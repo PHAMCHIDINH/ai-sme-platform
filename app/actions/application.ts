@@ -3,25 +3,15 @@
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_DEADLINE_MS = 30 * 24 * 60 * 60 * 1000;
 
-function getUserIdByRole(
-  session: Awaited<ReturnType<typeof auth>>,
-  role: "SME" | "STUDENT",
-) {
-  if (!session?.user?.id || session.user.role !== role) {
-    return null;
-  }
-
-  return session.user.id;
-}
-
 export async function applyProject(projectId: string, matchScore: number) {
   try {
     const session = await auth();
-    const studentUserId = getUserIdByRole(session, "STUDENT");
+    const studentUserId = getSessionUserIdByRole(session, "STUDENT");
 
     if (!studentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
@@ -103,7 +93,7 @@ export async function updateCandidateStatus(
 ) {
   try {
     const session = await auth();
-    const smeUserId = getUserIdByRole(session, "SME");
+    const smeUserId = getSessionUserIdByRole(session, "SME");
 
     if (!smeUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
@@ -219,7 +209,7 @@ export async function updateCandidateStatus(
 export async function inviteStudent(projectId: string, studentId: string) {
   try {
     const session = await auth();
-    const smeUserId = getUserIdByRole(session, "SME");
+    const smeUserId = getSessionUserIdByRole(session, "SME");
 
     if (!smeUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
@@ -267,7 +257,7 @@ export async function inviteStudent(projectId: string, studentId: string) {
 export async function respondToInvitation(projectId: string, status: "ACCEPTED" | "REJECTED") {
   try {
     const session = await auth();
-    const studentUserId = getUserIdByRole(session, "STUDENT");
+    const studentUserId = getSessionUserIdByRole(session, "STUDENT");
 
     if (!studentUserId) {
       return { error: "Bạn không có quyền thực hiện thao tác này." };
