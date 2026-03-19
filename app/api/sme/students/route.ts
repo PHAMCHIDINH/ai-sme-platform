@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateEmbedding, canGenerateEmbedding } from "@/lib/openai";
 
+export const dynamic = "force-dynamic";
+
 // Helper function manually calculating cosine similarity
 function cosineSimilarity(A: number[], B: number[]) {
   let dotProduct = 0;
