@@ -1,0 +1,71 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic:
+      - generic [ref=e4]:
+        - paragraph [ref=e5]: 03 • Gap
+        - paragraph [ref=e6]: Vì sao giải pháp hiện tại chưa đủ
+      - generic [ref=e8]: 4/12
+    - article [ref=e324]:
+      - generic [ref=e326]:
+        - generic [ref=e327]:
+          - generic [ref=e329]:
+            - generic [ref=e330]:
+              - img
+              - text: "03"
+            - generic [ref=e331]:
+              - paragraph [ref=e332]: Gap
+              - heading "Vì sao giải pháp hiện tại chưa đủ" [level=2] [ref=e333]
+              - paragraph [ref=e334]: Các nền tảng hiện tại làm tốt phần việc của họ, nhưng vẫn bỏ trống nhóm micro-project ngắn, nhỏ và cần đầu ra rõ.
+          - generic [ref=e335]:
+            - generic [ref=e336]: Tuyển dài hạn
+            - generic [ref=e337]: Ưu tiên hồ sơ mạnh
+            - generic [ref=e338]: Micro-project bị bỏ trống
+        - generic [ref=e339]:
+          - generic [ref=e340]:
+            - paragraph [ref=e341]: Mô hình 1
+            - paragraph [ref=e342]: Job board
+            - generic [ref=e343]:
+              - paragraph [ref=e346]: Mạnh ở tuyển dụng dài hạn.
+              - paragraph [ref=e349]: Cần JD khá rõ từ đầu.
+          - generic [ref=e350]:
+            - paragraph [ref=e351]: Mô hình 2
+            - paragraph [ref=e352]: Freelancer marketplace
+            - generic [ref=e353]:
+              - paragraph [ref=e356]: Ưu tiên người đã có hồ sơ mạnh.
+              - paragraph [ref=e359]: Sinh viên mới khó nổi bật nếu thiếu portfolio.
+          - generic [ref=e360]:
+            - paragraph [ref=e361]: Khoảng trống
+            - paragraph [ref=e362]: Nho Ti nhắm tới
+            - generic [ref=e363]:
+              - paragraph [ref=e366]: Chuẩn hóa bài toán nhỏ thành brief dễ giao.
+              - paragraph [ref=e369]: Gợi ý người phù hợp theo năng lực.
+              - paragraph [ref=e372]: Đo giá trị bằng đầu ra và phản hồi thật.
+            - generic [ref=e373]: Micro-project rõ đầu ra
+        - generic [ref=e374]:
+          - paragraph [ref=e375]: Takeaway
+          - paragraph [ref=e376]: Khoảng trống còn lại là đầu việc nhỏ, brief chưa rõ và nhu cầu tích lũy hồ sơ thực chiến.
+    - generic:
+      - generic [ref=e106]:
+        - button "Đến slide 1" [ref=e107] [cursor=pointer]
+        - button "Đến slide 2" [ref=e108] [cursor=pointer]
+        - button "Đến slide 3" [ref=e109] [cursor=pointer]
+        - button "Đến slide 4" [ref=e110] [cursor=pointer]
+        - button "Đến slide 5" [ref=e111] [cursor=pointer]
+        - button "Đến slide 6" [ref=e112] [cursor=pointer]
+        - button "Đến slide 7" [ref=e113] [cursor=pointer]
+        - button "Đến slide 8" [ref=e114] [cursor=pointer]
+        - button "Đến slide 9" [ref=e115] [cursor=pointer]
+        - button "Đến slide 10" [ref=e116] [cursor=pointer]
+        - button "Đến slide 11" [ref=e117] [cursor=pointer]
+        - button "Đến slide 12" [ref=e118] [cursor=pointer]
+      - generic [ref=e119]:
+        - button "Về slide đầu tiên" [ref=e224] [cursor=pointer]:
+          - img
+        - button "Slide trước" [ref=e225] [cursor=pointer]:
+          - img
+        - button "Slide tiếp theo" [ref=e120] [cursor=pointer]:
+          - generic [ref=e121]: Tiếp
+          - img
+        - button "Đến slide cuối" [ref=e122] [cursor=pointer]:
+          - img
+  - alert [ref=e123]

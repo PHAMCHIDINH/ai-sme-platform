@@ -1,0 +1,437 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 1 /Kids [3 0 R] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 6395 >>
+stream
+0.9 0.93 0.97 rg
+34.00 706.00 544.00 58.00 re f
+0.19 0.38 0.67 rg
+34.00 706.00 10.00 58.00 re f
+BT
+/F2 24.00 Tf
+0.11 0.14 0.2 rg
+52.00 730.00 Td
+(nhoti) Tj
+ET
+BT
+/F2 11.00 Tf
+0.19 0.38 0.67 rg
+52.00 715.00 Td
+(One-Page App Summary) Tj
+ET
+BT
+/F1 9.20 Tf
+0.35 0.39 0.48 rg
+204.00 715.80 Td
+(Repo-evidence summary | Generated 2026-03-19) Tj
+ET
+BT
+/F1 9.10 Tf
+0.35 0.39 0.48 rg
+406.00 738.90 Td
+(AI-enabled SME <> student workflow platform) Tj
+ET
+0.9 0.93 0.97 RG
+1.20 w
+34.00 694.00 m 578.00 694.00 l S
+0.19 0.38 0.67 rg
+34.00 660.00 261.00 20.00 re f
+BT
+/F2 10.10 Tf
+1 1 1 rg
+44.00 666.90 Td
+(What It Is) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 639.80 Td
+(nhoti is a dual-sided Next.js app that connects SME) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 627.38 Td
+(digital projects with students for short, real-world work.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 614.96 Td
+(It combines AI-assisted brief creation, profile/project) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 602.54 Td
+(matching, and an execution workflow from application) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 590.12 Td
+(through deliverable review.) Tj
+ET
+0.09 0.54 0.56 rg
+34.00 550.90 261.00 20.00 re f
+BT
+/F2 10.10 Tf
+1 1 1 rg
+44.00 557.80 Td
+(Who It's For) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 530.70 Td
+(Primary persona: an SME owner or manager who needs fast) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 518.28 Td
+(help on small digitalization tasks but may not have a) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 505.86 Td
+(clean technical brief. Secondary persona: university) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 493.44 Td
+(students building portfolio-ready experience through) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 481.02 Td
+(real company work.) Tj
+ET
+0.85 0.64 0.16 rg
+34.00 441.80 261.00 20.00 re f
+BT
+/F2 10.10 Tf
+1 1 1 rg
+44.00 448.70 Td
+(What It Does) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 421.60 Td
+(- Role-based signup and login for SMEs and students.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 407.18 Td
+(- AI chat wizard turns rough SME ideas into structured) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+43.00 394.76 Td
+(project fields.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 380.34 Td
+(- AI brief standardization and embedding generation for) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+43.00 367.92 Td
+(projects and profiles.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 353.50 Td
+(- Student profile management for skills, tech stack,) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+43.00 341.08 Td
+(links, and interests.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 326.66 Td
+(- AI-ranked project recommendations, candidate) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+43.00 314.24 Td
+(suggestions, and SME search.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 299.82 Td
+(- Apply/invite, accept/reject, and project lifecycle) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+43.00 287.40 Td
+(status tracking.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+34.00 272.98 Td
+(- Milestones, progress updates, deliverable link) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+43.00 260.56 Td
+(submission, and post-project ratings.) Tj
+ET
+0.73 0.31 0.36 rg
+317.00 660.00 261.00 20.00 re f
+BT
+/F2 10.10 Tf
+1 1 1 rg
+327.00 666.90 Td
+(How It Works) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 639.80 Td
+(UI: Next.js 14 App Router pages and client components,) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 627.38 Td
+(styled with Tailwind/shadcn; interactive forms use) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 614.96 Td
+(react-hook-form and some screens use React Query.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 596.54 Td
+(Auth and app logic: NextAuth credentials + bcrypt, with) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 584.12 Td
+(middleware gating /sme/* and /student/* routes; server) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 571.70 Td
+(actions and API routes handle projects, applications,) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 559.28 Td
+(progress, and evaluations.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 540.86 Td
+(Data and AI: Prisma writes to PostgreSQL models for) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 528.44 Td
+(users, profiles, projects, applications, project) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 516.02 Td
+(progress, and evaluations. OpenAI/OpenRouter routes) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 503.60 Td
+(standardize briefs, power the brief chat flow, and) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 491.18 Td
+(generate embeddings.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 472.76 Td
+(Data flow: Browser -> pages/forms -> API routes or server) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 460.34 Td
+(actions -> Prisma -> PostgreSQL; AI calls return briefs) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 447.92 Td
+(and embeddings that feed matching and dashboard ranking.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 429.50 Td
+(Background jobs, queues, analytics, and file/object) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 417.08 Td
+(storage: Not found in repo. Deliverables are stored as) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 404.66 Td
+(external URLs, not uploaded files.) Tj
+ET
+0.2 0.55 0.32 rg
+317.00 365.44 261.00 20.00 re f
+BT
+/F2 10.10 Tf
+1 1 1 rg
+327.00 372.34 Td
+(How To Run) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 345.24 Td
+(1.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+332.82 345.24 Td
+(Use Node 20.x; copy .env.example to .env and fill) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+332.82 332.82 Td
+(AUTH_SECRET and NEXTAUTH_SECRET. Add OPENAI_* to) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+332.82 320.40 Td
+(enable AI features.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 305.98 Td
+(2.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+332.82 305.98 Td
+(Run npm install.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 291.56 Td
+(3.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+332.82 291.56 Td
+(Run npm run db:up.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 277.14 Td
+(4.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+332.82 277.14 Td
+(Run npm run db:push.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+317.00 262.72 Td
+(5.) Tj
+ET
+BT
+/F1 9.20 Tf
+0.11 0.14 0.2 rg
+332.82 262.72 Td
+(Run npm run dev and open http://localhost:3000.) Tj
+ET
+0.9 0.93 0.97 RG
+1.00 w
+34.00 40.00 m 578.00 40.00 l S
+BT
+/F1 8.00 Tf
+0.35 0.39 0.48 rg
+34.00 26.00 Td
+(Evidence: README, .env.example, Prisma schema, auth/openai libs, dashboard pages, server actions, and API routes.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000261 00000 n 
+0000006708 00000 n 
+0000006778 00000 n 
+0000006853 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+6921
+%%EOF

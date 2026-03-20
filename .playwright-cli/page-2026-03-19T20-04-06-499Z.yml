@@ -1,0 +1,111 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic:
+      - generic [ref=e4]:
+        - paragraph [ref=e5]: Nho Ti • Pitch deck
+        - paragraph [ref=e6]: Việc nhỏ, giá trị thật
+      - generic [ref=e7]:
+        - generic [ref=e8]: 1/12
+        - generic [ref=e9]:
+          - img [ref=e10]
+          - text: Arrow keys, Space, Home, End
+    - article [ref=e15]:
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - img
+            - text: Pitch deck
+          - generic [ref=e21]:
+            - img [ref=e22]
+            - generic [ref=e29]:
+              - generic [ref=e30]:
+                - paragraph [ref=e31]: Nho Ti
+                - paragraph [ref=e32]: nhoti
+              - generic [ref=e33]: Nhỏ tí, giá trị thật
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e36]:
+              - paragraph [ref=e37]: Nho Ti
+              - heading "Việc nhỏ, giá trị thật" [level=1] [ref=e38]
+              - paragraph [ref=e39]: Nền tảng AI kết nối sinh viên với doanh nghiệp SME qua các micro-project thực tế.
+            - generic [ref=e40]:
+              - generic [ref=e41]: AI hỗ trợ
+              - generic [ref=e42]: Micro-project
+              - generic [ref=e43]: Sinh viên x SME
+            - generic [ref=e45]:
+              - paragraph [ref=e46]: Điểm chính
+              - generic [ref=e47]:
+                - generic [ref=e48]:
+                  - img [ref=e49]
+                  - paragraph [ref=e52]: Bắt đầu từ đầu việc nhỏ nhưng đủ thật để học và làm.
+                - generic [ref=e53]:
+                  - img [ref=e54]
+                  - paragraph [ref=e57]: Giảm ma sát từ brief đến matching và bàn giao.
+                - generic [ref=e58]:
+                  - img [ref=e59]
+                  - paragraph [ref=e62]: Tạo giá trị rõ cho cả sinh viên lẫn SME.
+            - generic [ref=e63]:
+              - paragraph [ref=e64]: Takeaway
+              - paragraph [ref=e65]: Từ việc nhỏ, đi tới năng lực thật và đầu ra thật.
+          - figure "Hero mở đầu Ảnh cover nên tạo cảm giác cầu nối giữa sinh viên, SME và AI." [ref=e66]:
+            - generic [ref=e70]:
+              - generic [ref=e71]:
+                - generic [ref=e72]:
+                  - img
+                  - text: Ảnh cần bổ sung
+                - generic [ref=e73]:
+                  - paragraph [ref=e74]: Tạo ảnh cover cho slide mở đầu
+                  - paragraph [ref=e75]: Ảnh cover nên tạo cảm giác cầu nối giữa sinh viên, SME và AI.
+              - generic [ref=e76]:
+                - generic [ref=e77]:
+                  - paragraph [ref=e78]: File
+                  - paragraph [ref=e79]: /presentation/cover-hero.webp
+                - generic [ref=e80]:
+                  - paragraph [ref=e81]: Ratio
+                  - paragraph [ref=e82]: 4:5
+                - generic [ref=e83]:
+                  - paragraph [ref=e84]: Size
+                  - paragraph [ref=e85]: 1600x2000 | min 1200x1500
+            - generic [ref=e86]:
+              - img [ref=e88]
+              - generic [ref=e93]:
+                - paragraph [ref=e94]: Hero mở đầu
+                - paragraph [ref=e95]: Ảnh cover nên tạo cảm giác cầu nối giữa sinh viên, SME và AI.
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - paragraph [ref=e98]: Mô hình
+            - paragraph [ref=e99]: Nền tảng 2 phía
+            - paragraph [ref=e100]: Kết nối đúng nhu cầu thật với đúng năng lực phù hợp.
+          - generic [ref=e101]:
+            - paragraph [ref=e102]: Cách làm
+            - paragraph [ref=e103]: AI hỗ trợ
+            - paragraph [ref=e104]: Chuẩn hóa brief, matching và nhịp phối hợp cơ bản.
+          - generic [ref=e105]:
+            - paragraph [ref=e106]: Giai đoạn
+            - paragraph [ref=e107]: Early MVP
+            - paragraph [ref=e108]: Đang kiểm chứng mô hình trước khi mở rộng.
+    - generic:
+      - generic [ref=e109]:
+        - button "Đến slide 1" [ref=e110] [cursor=pointer]
+        - button "Đến slide 2" [ref=e111] [cursor=pointer]
+        - button "Đến slide 3" [ref=e112] [cursor=pointer]
+        - button "Đến slide 4" [ref=e113] [cursor=pointer]
+        - button "Đến slide 5" [ref=e114] [cursor=pointer]
+        - button "Đến slide 6" [ref=e115] [cursor=pointer]
+        - button "Đến slide 7" [ref=e116] [cursor=pointer]
+        - button "Đến slide 8" [ref=e117] [cursor=pointer]
+        - button "Đến slide 9" [ref=e118] [cursor=pointer]
+        - button "Đến slide 10" [ref=e119] [cursor=pointer]
+        - button "Đến slide 11" [ref=e120] [cursor=pointer]
+        - button "Đến slide 12" [ref=e121] [cursor=pointer]
+      - generic [ref=e122]:
+        - button "Về slide đầu tiên" [disabled]:
+          - img
+        - button "Slide trước" [disabled]:
+          - img
+        - button "Slide tiếp theo" [ref=e123] [cursor=pointer]:
+          - generic [ref=e124]: Tiếp
+          - img
+        - button "Đến slide cuối" [ref=e125] [cursor=pointer]:
+          - img
+  - alert [ref=e126]
