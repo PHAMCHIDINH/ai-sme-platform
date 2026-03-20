@@ -1,20 +1,29 @@
-import { auth } from "@/auth";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Building2,
-  GraduationCap,
-  Zap,
-  Sparkles,
-  Target,
-  Users,
-} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  CheckCircle2,
+  FileCheck2,
+  GraduationCap,
+  LayoutDashboard,
+  MessagesSquare,
+  Sparkles,
+  Target,
+} from "lucide-react";
+
+import { auth } from "@/auth";
 import { Navbar } from "@/components/layout/navbar";
+import { WorkflowStep } from "@/components/patterns/b2b";
+import { Badge } from "@/components/retroui/Badge";
+import { Button } from "@/components/retroui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/retroui/Card";
+
+const enterpriseBenefits = [
+  "Mô tả nhu cầu theo ngôn ngữ kinh doanh, hệ thống hỗ trợ chuẩn hóa thành brief rõ ràng.",
+  "Tìm ứng viên phù hợp dựa trên kỹ năng, mức độ phù hợp và tiến độ thực hiện.",
+  "Theo dõi dự án từ lúc mở brief đến khi bàn giao và đánh giá kết quả.",
+];
 
 export default async function Home() {
   const session = await auth();
@@ -28,164 +37,231 @@ export default async function Home() {
       <Navbar />
 
       <main className="page-wrap flex flex-1 flex-col gap-20 pb-16 pt-28 md:pt-32">
-        <section className="grid items-center gap-8 lg:grid-cols-[1.2fr_1fr]">
-          <div className="space-y-6">
-            <Badge className="bg-lime-200">
-              <Sparkles className="mr-1 h-3.5 w-3.5" /> Kết nối thực chiến thật
-            </Badge>
+        <section className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="page-hero flex flex-col justify-between gap-8">
+            <div className="space-y-5">
+              <span className="eyebrow">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Nền tảng phối hợp giữa SME và sinh viên
+              </span>
 
-            <h1 className="text-balance text-4xl font-black leading-tight md:text-6xl">
-              Nơi <span className="bg-violet-200 px-2">Sinh viên IT</span> gặp bài toán thật từ
-              <span className="bg-pink-200 px-2"> SME Việt Nam</span>
-            </h1>
+              <div className="space-y-4">
+                <h1 className="text-4xl font-semibold leading-tight tracking-tight text-text-strong md:text-6xl">
+                  Giúp doanh nghiệp viết đúng bài toán, tìm đúng người thực hiện và theo dõi dự án rõ ràng hơn.
+                </h1>
+                <p className="max-w-2xl text-lg leading-8 text-text-muted">
+                  VnSMEMatch hỗ trợ SME chuẩn hóa nhu cầu bằng AI, kết nối với sinh viên có năng lực phù hợp
+                  và đưa toàn bộ quá trình triển khai về một luồng làm việc có cấu trúc.
+                </p>
+              </div>
 
-            <p className="max-w-2xl text-lg font-medium text-foreground/80">
-              VnSMEMatch giúp doanh nghiệp đăng nhu cầu số hóa, AI chuẩn hóa brief và gợi ý ứng viên phù hợp.
-              Sinh viên xây portfolio thật qua các dự án có đầu ra rõ ràng.
-            </p>
-
-            <div className="flex flex-wrap gap-3">
-              <Link href="/register?role=student">
-                <Button size="lg" className="bg-violet-200 hover:bg-violet-300">
-                  <GraduationCap className="h-5 w-5" /> Tôi là Sinh viên
+              <div className="flex flex-wrap gap-3">
+                <Button asChild size="lg">
+                  <Link href="/register?role=sme">
+                    Tôi là doanh nghiệp <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
-              </Link>
-              <Link href="/register?role=sme">
-                <Button size="lg" variant="secondary" className="bg-cyan-200 hover:bg-cyan-300">
-                  <Building2 className="h-5 w-5" /> Tôi là Doanh nghiệp
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/register?role=student">Tôi là sinh viên</Link>
                 </Button>
-              </Link>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="surface-card-muted bg-violet-200 p-4">
+                <div className="detail-kicker text-violet-950 font-bold">Đầu vào</div>
+                <div className="mt-2 text-sm font-bold text-text-strong">Nhu cầu kinh doanh thô</div>
+              </div>
+              <div className="surface-card-muted bg-pink-200 p-4">
+                <div className="detail-kicker text-pink-950 font-bold">Xử lý</div>
+                <div className="mt-2 text-sm font-bold text-text-strong">AI chuẩn hóa brief và tiêu chí</div>
+              </div>
+              <div className="surface-card-muted bg-green-200 p-4">
+                <div className="detail-kicker text-green-950 font-bold">Đầu ra</div>
+                <div className="mt-2 text-sm font-bold text-text-strong">Ứng viên phù hợp và tiến độ minh bạch</div>
+              </div>
             </div>
           </div>
 
-          <Card className="bg-white">
-            <CardHeader>
+          <Card className="bg-cyan-100">
+            <CardHeader className="space-y-3">
+              <Badge variant="secondary" className="w-fit bg-white border-2 border-border shadow-neo-sm font-bold text-text-strong hover:bg-white">
+                Mô phỏng luồng vận hành
+              </Badge>
               <CardTitle className="text-xl">Bảng điều phối dự án mẫu</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 pb-4">
-              <div className="rounded-md border-2 border-black bg-yellow-200 p-4 shadow-neo-sm">
-                <p className="text-sm font-extrabold uppercase tracking-[0.08em]">Project #SME-28</p>
-                <p className="mt-1 text-sm font-medium">Xây hệ thống quản lý kho mini cho cửa hàng bán lẻ.</p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-md border-2 border-black bg-pink-200 p-3 shadow-neo-sm">
-                  <p className="text-xs font-extrabold uppercase">Ứng viên phù hợp</p>
-                  <p className="text-2xl font-black">12</p>
-                </div>
-                <div className="rounded-md border-2 border-black bg-cyan-200 p-3 shadow-neo-sm">
-                  <p className="text-xs font-extrabold uppercase">Đang triển khai</p>
-                  <p className="text-2xl font-black">4</p>
+            <CardContent className="space-y-4">
+              <div className="surface-card-muted bg-white p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="detail-kicker font-bold">Dự án</p>
+                    <p className="mt-2 text-base font-bold text-text-strong">
+                      Xây quy trình quản lý đơn hàng nội bộ cho SME bán lẻ
+                    </p>
+                  </div>
+                  <Badge className="bg-green-300 text-green-950 border-2 border-border hover:bg-green-400 font-bold">Đang mở</Badge>
                 </div>
               </div>
-              <div className="rounded-md border-2 border-black bg-violet-200 p-3 text-sm font-semibold shadow-neo-sm">
-                AI Matching score trung bình: <span className="font-black">86%</span>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="surface-card-muted p-4">
+                  <div className="detail-kicker">Brief chuẩn hóa</div>
+                  <p className="mt-2 text-sm leading-6 text-text-muted">
+                    Mục tiêu, phạm vi, đầu ra và kỹ năng yêu cầu được cấu trúc lại trước khi đăng dự án.
+                  </p>
+                </div>
+                <div className="surface-card-muted p-4">
+                  <div className="detail-kicker">Ứng viên phù hợp</div>
+                  <p className="mt-2 text-sm leading-6 text-text-muted">
+                    Hệ thống hiển thị điểm phù hợp, kỹ năng nổi bật và trạng thái ứng tuyển.
+                  </p>
+                </div>
+              </div>
+
+              <div className="surface-card p-4">
+                <div className="detail-kicker">Quy trình triển khai</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["Chuẩn hóa nhu cầu", "Mở tuyển", "Theo dõi tiến độ", "Nghiệm thu"].map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-border-subtle bg-surface-muted px-3 py-1 text-xs font-medium text-text-muted"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
         </section>
 
-        <section id="benefits" className="rounded-md border-2 border-black bg-white p-6 shadow-neo-md md:p-8">
-          <p className="mb-5 text-sm font-extrabold uppercase tracking-[0.08em] text-foreground/70">Được tin dùng bởi</p>
-          <div className="flex flex-wrap items-center gap-6 text-sm font-black uppercase md:gap-10">
-            <span className="inline-flex items-center gap-2 rounded-md border-2 border-black bg-yellow-200 px-3 py-2 shadow-neo-sm">
-              <Zap className="h-4 w-4" /> TechStartup
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-md border-2 border-black bg-pink-200 px-3 py-2 shadow-neo-sm">
-              <Target className="h-4 w-4" /> SMESolutions
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-md border-2 border-black bg-lime-200 px-3 py-2 shadow-neo-sm">
-              <Users className="h-4 w-4" /> EduConnect
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-md border-2 border-black bg-cyan-200 px-3 py-2 shadow-neo-sm">
-              <Building2 className="h-4 w-4" /> VNRetail
-            </span>
+        <section id="benefits" className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-3">
+            <span className="eyebrow">Giá trị cho doanh nghiệp</span>
+            <h2 className="section-title text-3xl md:text-4xl">
+              Từ nhu cầu chưa rõ ràng đến một brief có thể giao việc và kiểm soát được.
+            </h2>
+            <p className="section-subtitle max-w-xl">
+              Thay vì bắt SME tự chuyển ngôn ngữ kinh doanh sang ngôn ngữ kỹ thuật, hệ thống hỗ trợ làm rõ đầu
+              bài, tiêu chí và đầu ra trước khi ghép nối.
+            </p>
+          </div>
+          <div className="grid gap-4">
+            {enterpriseBenefits.map((item, index) => {
+              const bgColors = ["bg-yellow-200", "bg-orange-200", "bg-lime-200"];
+              return (
+                <div key={item} className={`surface-card flex items-start gap-4 p-5 ${bgColors[index]}`}>
+                  <div className="rounded-xl border-2 border-border bg-white p-2 shadow-neo-sm shrink-0">
+                    <CheckCircle2 className="h-5 w-5 text-text-strong" />
+                  </div>
+                  <p className="text-sm font-medium leading-7 text-text-strong">{item}</p>
+                </div>
+              );
+            })}
           </div>
         </section>
 
         <section id="features" className="space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-3xl font-black md:text-5xl">Giải pháp Win-Win cho cả SME và Sinh viên</h2>
-            <p className="max-w-3xl text-base font-medium text-foreground/80">
-              AI hỗ trợ chuẩn hóa yêu cầu, đánh giá mức độ phù hợp và theo dõi tiến độ dự án theo từng cột mốc.
-            </p>
+          <div className="space-y-3">
+            <span className="eyebrow">Cách sản phẩm vận hành</span>
+            <h2 className="section-title text-3xl md:text-4xl">Một quy trình đủ rõ để SME tin tưởng giao việc.</h2>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="bg-yellow-200/80">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Building2 className="h-6 w-6" /> Dành cho Doanh nghiệp
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 pb-6">
-                {[
-                  "Đăng dự án số hóa nhanh với mẫu brief có AI hỗ trợ.",
-                  "Nhận danh sách ứng viên đã chấm điểm phù hợp theo kỹ năng.",
-                  "Theo dõi tiến độ trực quan và nghiệm thu đúng mốc.",
-                  "Tích lũy dữ liệu tuyển cộng tác viên cho các dự án sau.",
-                ].map((item) => (
-                  <p key={item} className="flex items-start gap-2 text-sm font-medium">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{item}</span>
-                  </p>
-                ))}
-                <Button variant="link" className="mt-2">
-                  Tìm hiểu thêm <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-cyan-200/80">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <GraduationCap className="h-6 w-6" /> Dành cho Sinh viên
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 pb-6">
-                {[
-                  "Nhận gợi ý dự án phù hợp kỹ năng và định hướng nghề nghiệp.",
-                  "Làm việc thực tế với doanh nghiệp qua các yêu cầu thật.",
-                  "Xây portfolio có minh chứng, review và kết quả đầu ra.",
-                  "Nhận đánh giá năng lực sau từng project đã hoàn thành.",
-                ].map((item) => (
-                  <p key={item} className="flex items-start gap-2 text-sm font-medium">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{item}</span>
-                  </p>
-                ))}
-                <Button variant="link" className="mt-2">
-                  Bắt đầu ngay <ArrowRight className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="grid gap-5 lg:grid-cols-3">
+            <WorkflowStep
+              step="Bước 1"
+              title="Làm rõ nhu cầu bằng AI"
+              description="Doanh nghiệp mô tả bài toán theo ngôn ngữ kinh doanh, hệ thống hỏi lại và chuẩn hóa thành brief có cấu trúc."
+              icon={MessagesSquare}
+            />
+            <WorkflowStep
+              step="Bước 2"
+              title="Ghép nối theo năng lực"
+              description="Sinh viên được hiển thị theo mức độ phù hợp và tín hiệu năng lực, thay vì chỉ dựa trên mô tả CV."
+              icon={Target}
+            />
+            <WorkflowStep
+              step="Bước 3"
+              title="Theo dõi và nghiệm thu"
+              description="Tiến độ, mốc công việc, trạng thái bàn giao và đánh giá được tập trung trong cùng một luồng làm việc."
+              icon={LayoutDashboard}
+            />
           </div>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2">
+          <Card className="bg-yellow-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="rounded-xl border-2 border-border bg-white p-2 shadow-neo-sm">
+                  <BriefcaseBusiness className="h-5 w-5 text-text-strong" />
+                </div>
+                Dành cho doanh nghiệp
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                "Chuẩn hóa yêu cầu và giảm rủi ro giao việc sai đầu bài.",
+                "Nhìn nhanh ứng viên phù hợp, trạng thái ứng tuyển và mức độ sẵn sàng.",
+                "Tổ chức quá trình thực hiện theo mốc, cập nhật và bàn giao.",
+              ].map((item) => (
+                <p key={item} className="flex items-start gap-3 text-sm font-medium leading-7 text-text-strong">
+                  <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-text-strong" />
+                  <span>{item}</span>
+                </p>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-pink-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3">
+                <div className="rounded-xl border-2 border-border bg-white p-2 shadow-neo-sm">
+                  <GraduationCap className="h-5 w-5 text-text-strong" />
+                </div>
+                Dành cho sinh viên
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {[
+                "Tiếp cận bài toán thực tế có đầu ra và bối cảnh doanh nghiệp rõ ràng.",
+                "Hiểu mình phù hợp với dự án nào thông qua tín hiệu matching và đánh giá.",
+                "Tích lũy kinh nghiệm thực chiến thay vì chỉ làm bài tập mô phỏng.",
+              ].map((item) => (
+                <p key={item} className="flex items-start gap-3 text-sm font-medium leading-7 text-text-strong">
+                  <FileCheck2 className="mt-1 h-5 w-5 shrink-0 text-text-strong" />
+                  <span>{item}</span>
+                </p>
+              ))}
+            </CardContent>
+          </Card>
         </section>
       </main>
 
-      <footer className="border-t-2 border-black bg-white py-10">
-        <div className="page-wrap grid gap-8 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <p className="mb-2 text-xl font-black">
-              VnSME<span className="text-violet-700">Match</span>
-            </p>
-            <p className="max-w-sm text-sm font-medium text-foreground/80">
-              Nền tảng kết nối sinh viên IT với nhu cầu chuyển đổi số thực tế từ doanh nghiệp vừa và nhỏ.
+      <footer className="border-t border-border-subtle bg-white/90 py-10">
+        <div className="page-wrap grid gap-8 md:grid-cols-3">
+          <div className="space-y-3">
+            <div className="text-lg font-semibold text-text-strong">
+              VnSME<span className="text-primary">Match</span>
+            </div>
+            <p className="max-w-sm text-sm leading-7 text-text-muted">
+              Nền tảng kết nối bài toán thực tế của doanh nghiệp với sinh viên có năng lực phù hợp và quy trình làm việc rõ ràng.
             </p>
           </div>
           <div>
-            <h4 className="mb-3 text-xs font-extrabold uppercase tracking-[0.08em]">Sản phẩm</h4>
-            <ul className="space-y-2 text-sm font-semibold">
-              <li><span>Đăng dự án</span></li>
-              <li><span>Tìm ứng viên</span></li>
-              <li><span>Tạo hồ sơ</span></li>
+            <h4 className="text-sm font-semibold text-text-strong">Năng lực cốt lõi</h4>
+            <ul className="mt-3 space-y-2 text-sm text-text-muted">
+              <li>AI chuẩn hóa brief</li>
+              <li>Matching theo kỹ năng</li>
+              <li>Theo dõi tiến độ dự án</li>
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 text-xs font-extrabold uppercase tracking-[0.08em]">Hỗ trợ</h4>
-            <ul className="space-y-2 text-sm font-semibold">
-              <li><span>Hướng dẫn</span></li>
-              <li><span>Chính sách</span></li>
-              <li><span>Liên hệ</span></li>
+            <h4 className="text-sm font-semibold text-text-strong">Điểm vào chính</h4>
+            <ul className="mt-3 space-y-2 text-sm text-text-muted">
+              <li>Đăng ký doanh nghiệp</li>
+              <li>Đăng ký sinh viên</li>
+              <li>Đăng nhập hệ thống</li>
             </ul>
           </div>
         </div>

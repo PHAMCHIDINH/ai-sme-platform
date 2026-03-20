@@ -2,7 +2,7 @@
 
 import { signOut } from "next-auth/react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 
 export function SignOutButton() {
   return (

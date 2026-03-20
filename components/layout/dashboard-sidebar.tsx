@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard,
   FolderKanban,
-  PlusCircle,
-  UserCircle,
+  LayoutDashboard,
   Layers,
-  LogOut,
   Loader2,
+  LogOut,
+  PlusCircle,
   Search,
+  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
+
+import { Button } from "@/components/retroui/Button";
+import { cn } from "@/lib/utils";
 
 const routes = {
   SME: [
@@ -49,24 +50,23 @@ export function DashboardSidebar({ role, userName }: DashboardSidebarProps) {
   }
 
   return (
-    <aside className="flex h-full w-72 flex-col border-r-4 border-black bg-yellow-200/70 p-4">
-      <div className="mb-4 rounded-md border-2 border-black bg-white p-4 shadow-neo-sm">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="rounded-md border-2 border-black bg-violet-200 p-1 shadow-neo-sm">
-            <Layers className="h-5 w-5" />
-          </div>
-          <span className="text-lg font-black">
-            VnSME<span className="text-violet-700">Match</span>
-          </span>
-        </Link>
-      </div>
-
-      <div className="mb-4 rounded-md border-2 border-black bg-cyan-200 p-3 shadow-neo-sm">
-        <div className="mb-1 text-xs font-extrabold uppercase tracking-[0.08em] text-foreground/70">
-          Người dùng
+    <aside className="sticky top-0 flex h-screen w-80 flex-col border-r-2 border-border bg-white px-5 py-5">
+      <Link href="/" className="surface-card bg-yellow-100 mb-4 flex items-center gap-3 p-4 hover:shadow-neo-md transition-shadow">
+        <div className="rounded-xl border-2 border-border bg-violet-300 p-2 shadow-neo-sm">
+          <Layers className="h-5 w-5 text-violet-950" />
         </div>
-        <div className="truncate text-sm font-bold">{userName}</div>
-        <div className="text-xs font-semibold text-foreground/70">
+        <div className="space-y-0.5">
+          <div className="text-lg font-bold text-text-strong">
+            VnSME<span className="text-primary">Match</span>
+          </div>
+          <div className="text-xs font-bold text-text-muted">Bảng điều phối dự án</div>
+        </div>
+      </Link>
+
+      <div className="surface-card-muted bg-cyan-100 mb-4 p-4">
+        <div className="detail-kicker font-bold text-cyan-950">Người dùng</div>
+        <div className="mt-2 truncate text-base font-bold text-text-strong">{userName}</div>
+        <div className="mt-1 text-sm font-bold text-cyan-900">
           {role === "SME" ? "Doanh nghiệp" : "Sinh viên"}
         </div>
       </div>
@@ -82,13 +82,13 @@ export function DashboardSidebar({ role, userName }: DashboardSidebarProps) {
           return (
             <Link key={item.href} href={item.href}>
               <Button
-                variant={isActive ? "default" : "outline"}
+                variant={isActive ? "default" : "ghost"}
                 className={cn(
-                  "w-full justify-start",
-                  isActive && "bg-pink-200 hover:bg-pink-300"
+                  "w-full justify-start rounded-xl px-4 py-3 text-sm font-bold transition-all",
+                  isActive && "border-2 border-border shadow-neo-sm text-white hover:scale-[1.02]",
                 )}
               >
-                <item.icon className="mr-2 h-4 w-4" />
+                <item.icon className="h-4 w-4" />
                 {item.name}
               </Button>
             </Link>
@@ -96,18 +96,14 @@ export function DashboardSidebar({ role, userName }: DashboardSidebarProps) {
         })}
       </div>
 
-      <div className="mt-4 border-t-2 border-black pt-4">
+      <div className="mt-4 border-t-2 border-border pt-4">
         <Button
-          variant="destructive"
-          className="w-full justify-start"
-          onClick={handleLogout}
+          variant="outline"
+          className="w-full justify-start rounded-xl px-4 py-3 text-sm font-bold border-2 border-border shadow-neo-sm hover:translate-y-[2px] transition-transform"
           disabled={loggingOut}
+          onClick={handleLogout}
         >
-          {loggingOut ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <LogOut className="mr-2 h-4 w-4" />
-          )}
+          {loggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
           Đăng xuất
         </Button>
       </div>

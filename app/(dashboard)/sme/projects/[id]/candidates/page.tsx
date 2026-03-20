@@ -3,9 +3,9 @@ import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/retroui/Button";
+import { Card, CardContent } from "@/components/retroui/Card";
+import { Badge } from "@/components/retroui/Badge";
 import { ArrowLeft, Sparkles, Code2, GraduationCap, Users } from "lucide-react";
 import { rankBySimilarity } from "@/lib/matching";
 import { CandidateActions } from "./candidate-actions";
@@ -127,7 +127,7 @@ export default async function CandidatesPage({ params }: { params: { id: string 
       <div className="space-y-6 mt-12">
         <h3 className="text-xl font-bold flex items-center">
           <Sparkles className="w-6 h-6 mr-2 text-indigo-500" /> Gợi ý từ AI 
-          <Badge className="ml-3 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-none transition-colors">Top Match</Badge>
+          <Badge className="ml-3 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors">Top Match</Badge>
         </h3>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -160,7 +160,7 @@ function StudentCard({ student, projectId }: { student: CandidateStudent, projec
   else if (matchScore >= 60) colorClass = "text-amber-600";
 
   return (
-    <Card className="border-none shadow-sm bg-white/60 backdrop-blur hover:shadow-md transition-shadow">
+    <Card className="bg-white transition-transform hover:-translate-y-0.5">
       <CardContent className="p-5">
         <div className="flex justify-between items-start mb-4">
           <div className="flex gap-3 items-center">
@@ -203,7 +203,7 @@ function StudentCard({ student, projectId }: { student: CandidateStudent, projec
              student.applicationData.status === "PENDING" ? (
                 <CandidateActions projectId={projectId} studentId={student.id} />
              ) : (
-                <div className="w-full text-center p-3 rounded-md font-black uppercase text-xs border-2 border-black bg-gray-100 shadow-neo-sm">
+                <div className="w-full rounded-xl border border-border-subtle bg-surface-muted p-3 text-center text-xs font-medium text-text-muted shadow-neo-sm">
                   {student.applicationData.status === "INVITED" ? "Đã gửi lời mời" : 
                    student.applicationData.status === "ACCEPTED" ? "Đã NHẬN VÀO DỰ ÁN" : "Đã từ chối"}
                 </div>

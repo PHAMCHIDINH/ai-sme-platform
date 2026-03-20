@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Building2, Loader2, Save } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 import {
   Card,
   CardContent,
@@ -13,10 +13,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/retroui/Card";
+import { Input } from "@/components/retroui/Input";
+import { Label } from "@/components/retroui/Label";
+import { Textarea } from "@/components/retroui/Textarea";
 import { type SmeProfileInput } from "@/lib/validators/sme-profile";
 
 type ActionResult = {
@@ -61,7 +61,7 @@ export function SmeProfileForm({ initialValues, submitAction }: SmeProfileFormPr
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Building2 className="mr-2 h-5 w-5 text-primary" />

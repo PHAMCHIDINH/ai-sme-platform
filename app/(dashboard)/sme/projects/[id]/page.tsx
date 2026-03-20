@@ -15,9 +15,9 @@ import {
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/retroui/Badge";
+import { Button } from "@/components/retroui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/retroui/Card";
 import { AcceptDeliverableButton } from "./accept-deliverable-button";
 
 type MilestoneItem = {
@@ -261,7 +261,7 @@ export default async function SMEProjectDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
+          <Card className="bg-white">
             <CardHeader>
               <CardTitle>Nội dung dự án</CardTitle>
             </CardHeader>
@@ -312,7 +312,7 @@ export default async function SMEProjectDetailPage({
         </div>
 
         <div className="space-y-6 lg:col-span-1">
-          <Card className="border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm backdrop-blur">
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
             <CardHeader>
               <CardTitle className="flex items-center text-blue-800">
                 <Users className="mr-2 h-5 w-5" />
@@ -336,7 +336,7 @@ export default async function SMEProjectDetailPage({
             </CardContent>
           </Card>
 
-          <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
+          <Card className="bg-white">
             <CardHeader>
               <CardTitle className="flex items-center text-base">
                 <Clock className="mr-2 h-4 w-4 text-muted-foreground" />

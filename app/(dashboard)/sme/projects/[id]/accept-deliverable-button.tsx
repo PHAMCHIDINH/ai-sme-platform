@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 
 type ActionResult = {
   success?: true;

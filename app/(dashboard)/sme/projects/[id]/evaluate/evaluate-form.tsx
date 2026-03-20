@@ -4,7 +4,7 @@ import { type FormEvent, useState, useTransition } from "react";
 import { Loader2, Star } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 import {
   Card,
   CardContent,
@@ -12,8 +12,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/retroui/Card";
+import { Textarea } from "@/components/retroui/Textarea";
 
 type EvaluationActionResult = {
   error?: string;
@@ -82,7 +82,7 @@ export function EvaluateForm({ studentName, submitAction }: EvaluateFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle>Tiêu chí đánh giá</CardTitle>
           <CardDescription>

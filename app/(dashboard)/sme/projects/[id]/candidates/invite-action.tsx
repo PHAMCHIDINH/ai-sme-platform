@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Loader2, MailPlus } from "lucide-react";
 import { inviteStudent } from "@/app/actions/application";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 
 export function InviteAction({ projectId, studentId }: { projectId: string; studentId: string }) {
   const [isLoading, setIsLoading] = useState(false);

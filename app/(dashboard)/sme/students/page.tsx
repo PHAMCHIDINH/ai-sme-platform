@@ -1,18 +1,32 @@
 "use client";
 
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Loader2, Search, Send, Star } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, Loader2, Send, Star } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { inviteStudent } from "@/app/actions/application";
-
-// Dialog components if shadcn is used (Mocking simple modal if not imported)
-// I will use a simple state-based modal for the invite selection to avoid missing dependencies.
+import { EmptyState, PageHeader } from "@/components/patterns/b2b";
+import { Badge } from "@/components/retroui/Badge";
+import { Button } from "@/components/retroui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/retroui/Card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/retroui/Dialog";
+import { Input } from "@/components/retroui/Input";
+import { Label } from "@/components/retroui/Label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/retroui/Select";
 
 type Student = {
   id: string;
@@ -39,19 +53,18 @@ export default function SmeStudentsPage() {
     queryKey: ["sme-students", search],
     queryFn: async () => {
       const url = search ? `/api/sme/students?q=${encodeURIComponent(search)}` : "/api/sme/students";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch students");
-      return res.json();
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch students");
+      return response.json();
     },
   });
 
-  // Fetch SME's projects to populate the modal select
   const { data: myProjects } = useQuery<ProjectLite[]>({
     queryKey: ["sme-projects-lite"],
     queryFn: async () => {
-      const res = await fetch("/api/projects");
-      if (!res.ok) return [];
-      const payload = (await res.json()) as { projects?: ProjectLite[] };
+      const response = await fetch("/api/projects");
+      if (!response.ok) return [];
+      const payload = (await response.json()) as { projects?: ProjectLite[] };
       const projects = Array.isArray(payload.projects) ? payload.projects : [];
       return projects.filter((project) => project.status === "OPEN");
     },
@@ -59,18 +72,19 @@ export default function SmeStudentsPage() {
 
   const inviteMutation = useMutation({
     mutationFn: async ({ projectId, studentId }: { projectId: string; studentId: string }) => {
-      const res = await inviteStudent(projectId, studentId);
-      if (res.error) throw new Error(res.error);
-      return res;
+      const result = await inviteStudent(projectId, studentId);
+      if (result.error) throw new Error(result.error);
+      return result;
     },
     onSuccess: () => {
-      toast.success("Đã gửi lời mời thành công!");
+      toast.success("Đã gửi lời mời thành công.");
       setInviteModalOpen(false);
       setSelectedStudent(null);
+      setSelectedProjectId("");
     },
-    onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");
-    }
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Có lỗi xảy ra");
+    },
   });
 
   const handleOpenInvite = (student: Student) => {
@@ -80,128 +94,136 @@ export default function SmeStudentsPage() {
 
   const submitInvite = () => {
     if (!selectedProjectId || !selectedStudent) {
-      toast.error("Vui lòng chọn dự án");
+      toast.error("Vui lòng chọn dự án.");
       return;
     }
+
     inviteMutation.mutate({ projectId: selectedProjectId, studentId: selectedStudent.id });
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div className="bg-fuchsia-300 border-2 border-black p-8 rounded-none shadow-neo-lg relative overflow-hidden">
-        <div className="relative z-10 max-w-2xl">
-          <h1 className="text-4xl font-black uppercase tracking-tight mb-2">HEADHUNT AI</h1>
-          <p className="font-bold text-black/80">Khám phá và chiêu mộ sinh viên tài năng nhất cho dự án của bạn.</p>
-        </div>
-        <div className="absolute -right-10 -bottom-10 opacity-20">
-          <Search className="w-64 h-64" />
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Tìm sinh viên"
+        title="Tìm ứng viên theo nhu cầu dự án và mời tham gia trực tiếp từ dashboard."
+        description="Danh sách được gợi ý dựa trên mô tả tìm kiếm và có thể đi tiếp ngay sang bước gửi lời mời cho project đang mở."
+      />
 
-      <div className="flex gap-4 items-center bg-white p-4 border-2 border-black shadow-neo-sm">
-        <Search className="w-5 h-5 text-gray-500" />
-        <Input 
+      <div className="surface-card flex items-center gap-3 px-5 py-4">
+        <Search className="h-4 w-4 text-text-muted" />
+        <Input
+          className="border-0 bg-transparent px-0 shadow-none focus:border-transparent focus:bg-transparent focus:ring-0"
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Nhập mô tả dự án hoặc kỹ năng để hệ thống gợi ý ứng viên..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Nhập mô tả dự án để AI gợi ý sinh viên phù hợp nhất..."
-          className="shadow-none border-none text-lg focus-visible:ring-0 px-0 rounded-none bg-transparent"
         />
-        {isLoading && <Loader2 className="w-5 h-5 animate-spin text-gray-400" />}
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-text-muted" /> : null}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {students?.map((student) => (
-          <Card key={student.id} className="border-2 border-black rounded-none shadow-neo-md hover:shadow-neo-lg transition-all hover:-translate-y-1 bg-white flex flex-col">
-            <CardHeader className="border-b-2 border-black bg-emerald-100 flex-row items-center justify-between space-y-0">
-              <CardTitle className="font-black text-xl line-clamp-1">{student.user.name}</CardTitle>
-              {student.matchScore !== undefined && student.matchScore > 0 && (
-                <Badge className="bg-yellow-300 text-black border-2 border-black shadow-neo-sm rounded-none text-base font-bold flex gap-1">
-                  <Star className="w-4 h-4 fill-black" /> {student.matchScore}%
-                </Badge>
-              )}
-            </CardHeader>
-            <CardContent className="p-4 flex-1 space-y-4">
-              <div>
-                <p className="text-sm font-bold text-gray-500 uppercase">Trường / Chuyên ngành</p>
-                <p className="font-semibold">{student.university}</p>
-                <p className="text-sm">{student.major}</p>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-gray-500 uppercase mb-2">Kỹ năng</p>
-                <div className="flex flex-wrap gap-2">
-                  {student.skills.slice(0, 4).map(skill => (
-                    <span key={skill} className="px-2 py-1 bg-gray-100 border border-black text-xs font-bold font-mono">
-                      {skill}
-                    </span>
-                  ))}
-                  {student.skills.length > 4 && (
-                    <span className="px-2 py-1 bg-gray-100 border border-black text-xs font-bold font-mono">
-                      +{student.skills.length - 4}
-                    </span>
-                  )}
+      {students?.length === 0 && !isLoading ? (
+        <EmptyState
+          icon={Search}
+          title="Chưa tìm thấy ứng viên phù hợp"
+          description="Hãy thay đổi từ khóa tìm kiếm hoặc quay lại sau khi có thêm hồ sơ sinh viên được đồng bộ vào hệ thống."
+        />
+      ) : (
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {students?.map((student) => (
+            <Card key={student.id} className="bg-white">
+              <CardHeader className="space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <CardTitle className="line-clamp-1">{student.user.name}</CardTitle>
+                    <p className="text-sm text-text-muted">{student.user.email}</p>
+                  </div>
+                  {student.matchScore !== undefined && student.matchScore > 0 ? (
+                    <Badge className="bg-brand-100 text-primary">
+                      <Star className="h-3.5 w-3.5" />
+                      {student.matchScore}% phù hợp
+                    </Badge>
+                  ) : null}
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="p-0 border-t-2 border-black">
-              <Button 
-                onClick={() => handleOpenInvite(student)}
-                className="w-full rounded-none h-12 bg-black hover:bg-black/90 text-white font-black uppercase tracking-widest text-base"
-              >
-                Mời Hợp Tác <Send className="w-4 h-4 ml-2" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-        {students?.length === 0 && !isLoading && (
-           <div className="col-span-full py-12 flex flex-col items-center justify-center bg-yellow-300 border-2 border-black shadow-neo-md">
-             <Search className="w-12 h-12 mb-4" />
-             <h3 className="text-2xl font-black uppercase">KHÔNG TÌM THẤY ỨNG VIÊN NÀO</h3>
-             <p className="font-bold">Hãy thử nhập từ khóa khác.</p>
-           </div>
-        )}
-      </div>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="space-y-1">
+                  <p className="detail-kicker">Trường và chuyên ngành</p>
+                  <p className="text-sm font-semibold text-text-strong">{student.university}</p>
+                  <p className="text-sm text-text-muted">{student.major}</p>
+                </div>
 
-      {inviteModalOpen && selectedStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-6 animate-in zoom-in-95">
-            <h2 className="text-2xl font-black uppercase mb-2">Chọn Dự Án</h2>
-            <p className="mb-6 font-medium">Bạn muốn mời <span className="font-bold text-emerald-600">{selectedStudent.user.name}</span> tham gia dự án nào?</p>
-            
-            <div className="space-y-4 mb-6">
-              <select 
-                value={selectedProjectId} 
-                onChange={e => setSelectedProjectId(e.target.value)}
-                className="w-full border-2 border-black p-3 font-bold focus:outline-none focus:ring-2 ring-emerald-400 bg-gray-50"
-              >
-                <option value="" disabled>-- Chọn dự án mở --</option>
-                {myProjects?.map((p) => (
-                  <option key={p.id} value={p.id}>{p.title}</option>
-                ))}
-              </select>
-              {myProjects?.length === 0 && (
-                <p className="text-red-500 text-sm font-bold">Bạn không có dự án nào đang MỞ để mời.</p>
-              )}
-            </div>
+                <div className="space-y-2">
+                  <p className="detail-kicker">Kỹ năng chính</p>
+                  <div className="flex flex-wrap gap-2">
+                    {student.skills.slice(0, 4).map((skill) => (
+                      <Badge key={skill} variant="outline" className="bg-surface-muted text-text-muted">
+                        {skill}
+                      </Badge>
+                    ))}
+                    {student.skills.length > 4 ? (
+                      <Badge variant="outline" className="bg-surface-muted text-text-muted">
+                        +{student.skills.length - 4}
+                      </Badge>
+                    ) : null}
+                  </div>
+                </div>
 
-            <div className="flex gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => setInviteModalOpen(false)}
-                className="flex-1 rounded-none border-2 border-black shadow-neo-sm font-bold h-12"
-              >
-                HỦY
-              </Button>
-              <Button 
-                onClick={submitInvite}
-                disabled={!selectedProjectId || inviteMutation.isPending}
-                className="flex-1 rounded-none bg-emerald-400 hover:bg-emerald-500 text-black border-2 border-black shadow-neo-sm font-black h-12"
-              >
-                {inviteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "GỬI LỜI MỜI"}
-              </Button>
-            </div>
-          </div>
+                <Button className="w-full" onClick={() => handleOpenInvite(student)} variant="outline">
+                  <Send className="h-4 w-4" />
+                  Mời tham gia dự án
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
+
+      <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gửi lời mời tham gia dự án</DialogTitle>
+            <DialogDescription>
+              {selectedStudent
+                ? `Chọn một dự án đang mở để mời ${selectedStudent.user.name} tham gia.`
+                : "Chọn dự án muốn gửi lời mời."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 px-5">
+            <div className="space-y-2">
+              <Label htmlFor="invite-project">Dự án đang mở</Label>
+              <Select onValueChange={setSelectedProjectId} value={selectedProjectId}>
+                <SelectTrigger id="invite-project">
+                  <SelectValue placeholder="Chọn dự án" />
+                </SelectTrigger>
+                <SelectContent>
+                  {myProjects?.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {myProjects?.length === 0 ? (
+                <p className="text-sm text-danger">Bạn chưa có dự án nào ở trạng thái mở để gửi lời mời.</p>
+              ) : null}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setInviteModalOpen(false)} type="button" variant="outline">
+              Hủy
+            </Button>
+            <Button
+              disabled={!selectedProjectId || inviteMutation.isPending}
+              onClick={submitInvite}
+              type="button"
+            >
+              {inviteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Gửi lời mời
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

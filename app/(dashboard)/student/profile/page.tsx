@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 import {
   Card,
   CardContent,
@@ -15,11 +15,11 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/retroui/Card";
+import { Input } from "@/components/retroui/Input";
+import { Label } from "@/components/retroui/Label";
+import { Skeleton } from "@/components/retroui/Skeleton";
+import { Textarea } from "@/components/retroui/Textarea";
 import {
   studentProfileSchema,
   type StudentProfileInput,
@@ -168,7 +168,7 @@ export default function StudentProfilePage() {
       <form onSubmit={onSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
+            <Card className="bg-white">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <GraduationCap className="w-5 h-5 mr-2 text-primary" /> Thông tin cơ bản
@@ -202,7 +202,7 @@ export default function StudentProfilePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-sm bg-white/50 backdrop-blur border-t-4 border-t-indigo-500">
+            <Card className="bg-white border-t-4 border-t-indigo-500">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Code2 className="w-5 h-5 mr-2 text-indigo-500" /> Kỹ năng và Công nghệ
@@ -230,7 +230,7 @@ export default function StudentProfilePage() {
           </div>
 
           <div className="lg:col-span-1 space-y-6">
-            <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
+            <Card className="bg-white">
               <CardHeader>
                 <CardTitle>Liên kết & Thời gian</CardTitle>
               </CardHeader>
@@ -253,7 +253,7 @@ export default function StudentProfilePage() {
               </CardContent>
               <CardFooter>
                 <Button
-                  className="w-full shadow-lg h-12 rounded-xl"
+                  className="w-full h-12"
                   disabled={updateProfileMutation.isPending}
                   type="submit"
                 >

@@ -1,10 +1,11 @@
+import Link from "next/link";
+import { Award, Code2, FolderKanban, Layers, Star } from "lucide-react";
+
 import { auth } from "@/auth";
+import { Button } from "@/components/retroui/Button";
+import { MetricCard, PageHeader, SectionCard } from "@/components/patterns/b2b";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Layers, FolderKanban, Star, Award, Code2 } from "lucide-react";
 
 export default async function StudentDashboardPage() {
   const session = await auth();
@@ -58,105 +59,103 @@ export default async function StudentDashboardPage() {
     console.error("StudentDashboardPage load error:", error);
   }
 
-  const activeProjects = profile?.progressEntries.filter(p => p.status !== "COMPLETED").length || 0;
-  const completedProjects = profile?.progressEntries.filter(p => p.status === "COMPLETED").length || 0;
+  const activeProjects = profile?.progressEntries.filter((p) => p.status !== "COMPLETED").length || 0;
+  const completedProjects = profile?.progressEntries.filter((p) => p.status === "COMPLETED").length || 0;
   const profileCompletion = profile?.skills.length ? 80 : 30;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Tổng quan Cá nhân</h2>
-          <p className="text-muted-foreground text-sm">Đo lường sự phát triển thực chiến của bạn</p>
-        </div>
+      <PageHeader
+        eyebrow="Bảng điều phối cá nhân"
+        title="Theo dõi cơ hội phù hợp, project đang làm và mức độ hoàn thiện hồ sơ của bạn."
+        description="Dashboard này tập trung vào các tín hiệu giúp bạn biết mình đang ở đâu trong quá trình phát triển năng lực thực chiến."
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Đang thực hiện"
+          value={activeProjects}
+          description="Các project chưa hoàn tất"
+          icon={Layers}
+          tone="brand"
+        />
+        <MetricCard
+          label="Đã ứng tuyển"
+          value={profile?._count.applications || 0}
+          description="Tổng số lần gửi ứng tuyển"
+          icon={FolderKanban}
+          tone="neutral"
+        />
+        <MetricCard
+          label="Đã hoàn thành"
+          value={completedProjects}
+          description="Các đầu việc đã hoàn tất"
+          icon={Award}
+          tone="success"
+        />
+        <MetricCard
+          label="Đánh giá trung bình"
+          value={
+            <span>
+              {avgRating}
+              <span className="ml-1 text-sm font-medium text-text-muted">/ 5.0</span>
+            </span>
+          }
+          description="Điểm từ SME sau các lần hợp tác"
+          icon={Star}
+          tone="warning"
+        />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-sm bg-gradient-to-br from-indigo-50 to-blue-50 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-indigo-700">Đang thực hiện</CardTitle>
-            <Layers className="h-4 w-4 text-indigo-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-indigo-900">{activeProjects}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Đã ứng tuyển</CardTitle>
-            <FolderKanban className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{profile?._count.applications || 0}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Hoàn thành</CardTitle>
-            <Award className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{completedProjects}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Đánh giá TB</CardTitle>
-            <Star className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold flex items-baseline gap-1">
-              {avgRating} <span className="text-sm font-normal text-muted-foreground">/ 5.0</span>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SectionCard
+          title="Dự án gợi ý mới nhất"
+          description="Các cơ hội phù hợp hơn sẽ xuất hiện khi hồ sơ và kỹ năng của bạn được cập nhật rõ ràng."
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link href="/student/projects">Xem danh sách</Link>
+            </Button>
+          }
+        >
+          <div className="surface-card-muted flex min-h-[220px] flex-col items-center justify-center gap-4 text-center">
+            <div className="rounded-2xl border border-border-subtle bg-white p-4 shadow-neo-sm">
+              <Code2 className="h-6 w-6 text-primary" />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="space-y-2">
+              <p className="text-base font-semibold text-text-strong">Hệ thống đang gợi ý project phù hợp với hồ sơ của bạn</p>
+              <p className="max-w-md text-sm leading-7 text-text-muted">
+                Xem danh sách dự án để kiểm tra các bài toán đang mở, mức độ phù hợp và thông tin từ doanh nghiệp.
+              </p>
+            </div>
+          </div>
+        </SectionCard>
 
-      <div className="grid md:grid-cols-2 gap-6 mt-8">
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader>
-            <CardTitle>Dự án AI gợi ý mới nhất</CardTitle>
-            <CardDescription>Các dự án phù hợp với kỹ năng của bạn</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center p-6 min-h-[200px] text-center bg-muted/20 m-6 rounded-xl border border-dashed">
-            <Code2 className="w-10 h-10 mb-4 text-indigo-400 opacity-50" />
-            <p className="text-muted-foreground text-sm mb-4">Hệ thống có nhiều bài toán mới chờ bạn khám phá</p>
-            <Link href="/student/projects">
-              <Button variant="outline" className="border-indigo-200 text-indigo-600 hover:bg-indigo-50">
-                Khám phá ngay
+        <SectionCard
+          title="Mức độ hoàn thiện hồ sơ"
+          description="Hồ sơ càng rõ, matching và khả năng được mời càng tốt hơn."
+          action={
+            !profile?.skills.length ? (
+              <Button asChild size="sm">
+                <Link href="/student/profile">Cập nhật hồ sơ</Link>
               </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader>
-            <CardTitle>Phát triển hồ sơ</CardTitle>
-            <CardDescription>Trang bị tốt hơn cho AI Matching</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-muted/40 rounded-xl">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium">Độ hoàn thiện Profile</span>
-                <span className="text-sm font-bold text-primary">{profileCompletion}%</span>
+            ) : null
+          }
+        >
+          <div className="space-y-4">
+            <div className="surface-card-muted p-5">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm font-medium text-text-muted">Độ hoàn thiện hiện tại</span>
+                <span className="text-sm font-semibold text-primary">{profileCompletion}%</span>
               </div>
-              <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full"
-                  style={{ width: `${profileCompletion}%` }}
-                />
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${profileCompletion}%` }} />
               </div>
             </div>
-            {!profile?.skills.length && (
-               <Link href="/student/profile" className="block mt-4">
-                <Button className="w-full">Cập nhật kỹ năng để nhận gợi ý</Button>
-              </Link>
-            )}
-          </CardContent>
-        </Card>
+            <p className="text-sm leading-7 text-text-muted">
+              Khi kỹ năng, định hướng và thông tin hồ sơ được điền đầy đủ hơn, hệ thống sẽ có thêm tín hiệu để gợi ý project sát hơn.
+            </p>
+          </div>
+        </SectionCard>
       </div>
     </div>
   );

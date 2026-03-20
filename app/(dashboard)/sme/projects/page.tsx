@@ -1,12 +1,30 @@
-import { auth } from "@/auth";
-import { getSessionUserIdByRole } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { CalendarDays, PlusCircle, Users } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, FolderKanban, PlusCircle, Users } from "lucide-react";
+
+import { auth } from "@/auth";
+import { EmptyState, PageHeader, StatusChip } from "@/components/patterns/b2b";
+import { Badge } from "@/components/retroui/Badge";
+import { Button } from "@/components/retroui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/retroui/Card";
+import { getSessionUserIdByRole } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
+
+function projectStatusTone(status: string) {
+  if (status === "COMPLETED") return "success" as const;
+  if (status === "SUBMITTED") return "warning" as const;
+  if (status === "IN_PROGRESS") return "brand" as const;
+  return "neutral" as const;
+}
+
+function projectStatusLabel(status: string) {
+  if (status === "OPEN") return "Đang mở";
+  if (status === "IN_PROGRESS") return "Đang tiến hành";
+  if (status === "SUBMITTED") return "Chờ nghiệm thu";
+  if (status === "COMPLETED") return "Hoàn thành";
+  return "Nháp";
+}
 
 export default async function SMEProjectsPage() {
   const session = await auth();
@@ -17,117 +35,89 @@ export default async function SMEProjectsPage() {
   }
 
   const smeProfile = await prisma.sMEProfile.findUnique({
-    where: { userId: smeUserId }
+    where: { userId: smeUserId },
   });
 
-  const projects = smeProfile ? await prisma.project.findMany({
-    where: { smeId: smeProfile.id },
-    orderBy: { createdAt: "desc" },
-    include: { _count: { select: { applications: true } } }
-  }) : [];
+  const projects = smeProfile
+    ? await prisma.project.findMany({
+        where: { smeId: smeProfile.id },
+        orderBy: { createdAt: "desc" },
+        include: { _count: { select: { applications: true } } },
+      })
+    : [];
 
   return (
-    <div className="space-y-10 mb-20 fade-in">
-      {/* Brutalist Hero Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-2 border-black bg-cyan-200 p-8 md:p-10 shadow-neo-md rounded-lg">
-        <div>
-          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-black">Dự án của tôi</h2>
-          <p className="text-black font-semibold text-base mt-2 max-w-xl">
-            Quản lý và theo dõi tiến độ các dự án đã đăng tải. Đăng thêm bài toán thực chiến để tìm kiếm nhân tài.
-          </p>
-        </div>
-        <Link href="/sme/projects/new" className="shrink-0">
-          <Button size="lg" className="text-base font-black uppercase bg-yellow-300 hover:bg-yellow-400 border-2 border-black shadow-neo-md px-8 h-14 w-full md:w-auto">
-            <PlusCircle className="w-6 h-6 mr-2" /> Tạo dự án mới
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Danh sách dự án"
+        title="Quản lý project theo trạng thái, ứng viên và thời gian cập nhật."
+        description="Mỗi project hiển thị thông tin đủ để bạn nhanh chóng xác định tình trạng hiện tại và hành động tiếp theo."
+        actions={
+          <Button asChild>
+            <Link href="/sme/projects/new">
+              <PlusCircle className="h-4 w-4" />
+              Tạo dự án mới
+            </Link>
           </Button>
-        </Link>
-      </div>
+        }
+      />
 
       {projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 px-4 border-2 border-black bg-yellow-300 shadow-neo-lg rounded-lg text-center transform transition-transform hover:-translate-y-1">
-          <div className="w-24 h-24 bg-white border-4 border-black shadow-neo-md rounded-full flex items-center justify-center mb-6 transform -rotate-12">
-            <PlusCircle className="w-12 h-12 text-black" />
-          </div>
-          <h3 className="text-3xl md:text-4xl font-black mb-4 uppercase text-black">Chưa có dự án nào!</h3>
-          <p className="text-black font-bold text-lg mb-8 max-w-md">
-            Hãy đăng bài toán số hóa đầu tiên của doanh nghiệp bạn ngay hôm nay để thu hút các ứng viên xuất sắc.
-          </p>
-          <Link href="/sme/projects/new">
-            <Button size="lg" className="text-lg bg-pink-300 hover:bg-pink-400 border-2 border-black shadow-neo-md px-10 h-16 uppercase font-black">
-              Đăng dự án ngay
+        <EmptyState
+          icon={FolderKanban}
+          title="Chưa có dự án nào"
+          description="Khi bạn tạo project đầu tiên, hệ thống sẽ dùng luồng chuẩn hóa brief và danh sách ứng viên để hỗ trợ điều phối."
+          action={
+            <Button asChild>
+              <Link href="/sme/projects/new">Tạo dự án đầu tiên</Link>
             </Button>
-          </Link>
-        </div>
+          }
+        />
       ) : (
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project, index) => {
-            const bgColors = ["bg-lime-200", "bg-pink-200", "bg-violet-200", "bg-yellow-200", "bg-red-200", "bg-orange-200"];
-            const cardBgColor = bgColors[index % bgColors.length];
-            
-            return (
-              <div 
-                key={project.id} 
-                className={`group flex flex-col ${cardBgColor} border-2 border-black rounded-lg shadow-neo-md hover:shadow-neo-lg transition-all hover:-translate-y-1 hover:-translate-x-1 divide-y-2 divide-black overflow-hidden`}
-              >
-                {/* Header Section */}
-                <div className="p-5 bg-white">
-                  <div className="flex justify-between items-start mb-4">
-                    <Badge variant="outline" className={`border-2 border-black bg-white uppercase font-black px-3 py-1 shadow-neo-sm text-xs ${
-                        project.status === "OPEN" ? "text-green-600 border-green-600" :
-                        project.status === "IN_PROGRESS" ? "text-blue-600 border-blue-600" :
-                        project.status === "SUBMITTED" ? "text-amber-600 border-amber-600" :
-                        project.status === "COMPLETED" ? "text-violet-600 border-violet-600" :
-                        "text-gray-600 border-gray-600"
-                    }`}>
-                      {project.status === "OPEN" ? "Đang mở" :
-                        project.status === "IN_PROGRESS" ? "Đang tiến hành" :
-                        project.status === "SUBMITTED" ? "Chờ nghiệm thu" :
-                        project.status === "COMPLETED" ? "Hoàn thành" :
-                        "Nháp"}
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {projects.map((project) => (
+            <Card key={project.id} className="bg-white">
+              <CardHeader className="space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <StatusChip tone={projectStatusTone(project.status)}>{projectStatusLabel(project.status)}</StatusChip>
+                  <div className="inline-flex items-center gap-1 text-xs text-text-muted">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true, locale: vi })}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <CardTitle className="line-clamp-2">{project.title}</CardTitle>
+                  <p className="line-clamp-3 text-sm leading-7 text-text-muted">{project.description}</p>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="flex flex-wrap gap-2">
+                  {project.requiredSkills.slice(0, 4).map((skill) => (
+                    <Badge key={skill} variant="outline" className="bg-surface-muted text-text-muted">
+                      {skill}
                     </Badge>
-                    <span className="text-xs font-bold text-black border-2 border-black px-2 py-1 bg-gray-100 rounded-md shadow-neo-sm flex items-center">
-                      <CalendarDays className="w-3 h-3 mr-1" />
-                      {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true, locale: vi })}
-                    </span>
-                  </div>
-                  <h3 className="line-clamp-2 text-xl font-black uppercase tracking-tight text-black group-hover:underline decoration-4 underline-offset-4">
-                    <Link href={`/sme/projects/${project.id}`}>{project.title}</Link>
-                  </h3>
-                  <p className="line-clamp-2 mt-3 text-sm font-semibold text-black/80">
-                    {project.description}
-                  </p>
+                  ))}
+                  {project.requiredSkills.length > 4 ? (
+                    <Badge variant="outline" className="bg-surface-muted text-text-muted">
+                      +{project.requiredSkills.length - 4}
+                    </Badge>
+                  ) : null}
                 </div>
 
-                {/* Body/Skills Section */}
-                <div className="p-5 flex-grow bg-white flex flex-col justify-between">
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {project.requiredSkills.slice(0, 3).map((skill) => (
-                      <span key={skill} className="text-xs font-bold uppercase tracking-wider border-2 border-black px-2 py-1 bg-cyan-100 text-black shadow-neo-sm rounded-md">
-                        {skill}
-                      </span>
-                    ))}
-                    {project.requiredSkills.length > 3 && (
-                      <span className="text-xs font-bold uppercase tracking-wider border-2 border-black px-2 py-1 bg-gray-200 text-black shadow-neo-sm rounded-md">
-                        +{project.requiredSkills.length - 3}
-                      </span>
-                    )}
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-border-subtle bg-surface-muted px-4 py-3">
+                  <div>
+                    <div className="detail-kicker">Ứng viên</div>
+                    <div className="mt-1 text-sm font-semibold text-text-strong">{project._count.applications} hồ sơ</div>
                   </div>
-
-                  <div className="flex items-center text-sm font-black uppercase border-2 border-black bg-amber-100 text-black w-fit px-3 py-1.5 shadow-neo-sm rounded-md mt-auto">
-                    <Users className="w-4 h-4 mr-2" />
-                    {project._count.applications} Ứng viên
-                  </div>
+                  <Users className="h-4 w-4 text-text-muted" />
                 </div>
 
-                {/* Brutalist Footer Action */}
-                <Link href={`/sme/projects/${project.id}`} className="block w-full focus:outline-none">
-                  <div className={`w-full h-14 flex items-center justify-center font-black uppercase text-base border-0 transition-colors bg-white ${cardBgColor.replace('bg-', 'hover:bg-')} text-black`}>
-                    Xem chi tiết <svg className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                  </div>
-                </Link>
-              </div>
-            );
-          })}
+                <Button asChild className="w-full" variant="outline">
+                  <Link href={`/sme/projects/${project.id}`}>Xem chi tiết</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>

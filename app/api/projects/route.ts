@@ -86,7 +86,7 @@ export async function GET() {
       return unauthorizedResponse();
     }
 
-    if (session.user.role === "SME") {
+    if (session?.user?.role === "SME") {
       const smeProfile = await prisma.sMEProfile.findUnique({
         where: { userId }
       });

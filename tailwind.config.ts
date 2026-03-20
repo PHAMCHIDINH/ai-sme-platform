@@ -11,10 +11,18 @@ const config: Config = {
     extend: {
       colors: {
         border: "hsl(var(--border))",
+        "border-subtle": "hsl(var(--border-subtle))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        surface: "hsl(var(--surface))",
+        "surface-muted": "hsl(var(--surface-muted))",
+        "text-strong": "hsl(var(--text-strong))",
+        "text-muted": "hsl(var(--text-muted))",
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
+        danger: "hsl(var(--danger))",
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
@@ -27,10 +35,12 @@ const config: Config = {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        "primary-hover": "hsl(var(--primary-hover))",
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
         },
+        "secondary-hover": "hsl(var(--secondary-hover))",
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
@@ -43,6 +53,7 @@ const config: Config = {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        "destructive-hover": "hsl(var(--destructive-hover))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -54,46 +65,16 @@ const config: Config = {
           ring: "hsl(var(--sidebar-ring))",
         },
         brand: {
-          100: "#d4d2ff",
-          200: "#a8a6ff",
-          300: "#918efa",
-          400: "#807dfa",
-        },
-        violet: {
-          100: "#d4d2ff",
-          200: "#a8a6ff",
-          300: "#918efa",
-          400: "#807dfa",
-        },
-        pink: {
-          200: "#ffa6f6",
-          300: "#fa8cef",
-          400: "#fa7fee",
-        },
-        red: {
-          200: "#ff9f9f",
-          300: "#fa7a7a",
-          400: "#f76363",
-        },
-        orange: {
-          200: "#ffc29f",
-          300: "#ff965b",
-          400: "#fa8543",
-        },
-        yellow: {
-          200: "#fff59f",
-          300: "#fff066",
-          400: "#ffe500",
-        },
-        lime: {
-          200: "#b8ff9f",
-          300: "#9dfc7c",
-          400: "#7df752",
-        },
-        cyan: {
-          200: "#a6faff",
-          300: "#79f7ff",
-          400: "#53f2fc",
+          50: "#eef2ff",
+          100: "#e0e7ff",
+          200: "#c7d2fe",
+          300: "#a5b4fc",
+          400: "#818cf8",
+          500: "#6366f1",
+          600: "#4f46e5",
+          700: "#4338ca",
+          800: "#3730a3",
+          900: "#312e81",
         },
       },
       fontFamily: {
@@ -106,9 +87,9 @@ const config: Config = {
         lg: "var(--radius-lg)",
       },
       boxShadow: {
-        "neo-sm": "2px 2px 0 0 #111111",
-        "neo-md": "4px 4px 0 0 #111111",
-        "neo-lg": "8px 8px 0 0 #111111",
+        "neo-sm": "2px 2px 0px 0px rgba(15, 23, 42, 1)",
+        "neo-md": "4px 4px 0px 0px rgba(15, 23, 42, 1)",
+        "neo-lg": "8px 8px 0px 0px rgba(15, 23, 42, 1)",
       },
       backgroundImage: {
         "neo-grid":

@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { ProjectStatus } from "@prisma/client";
-import { FolderKanban, Users, Clock, PlusCircle, Building2 } from "lucide-react";
+import { Building2, Clock, FolderKanban, PlusCircle, Users } from "lucide-react";
 
 import { auth } from "@/auth";
+import { Button } from "@/components/retroui/Button";
+import { EmptyState, MetricCard, PageHeader, SectionCard, StatusChip } from "@/components/patterns/b2b";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function projectStatusLabel(status: ProjectStatus) {
   switch (status) {
@@ -24,12 +23,11 @@ function projectStatusLabel(status: ProjectStatus) {
   }
 }
 
-function projectStatusClass(status: ProjectStatus) {
-  if (status === "COMPLETED") return "border-green-500 text-green-600";
-  if (status === "SUBMITTED") return "border-amber-500 text-amber-600";
-  if (status === "IN_PROGRESS") return "border-blue-500 text-blue-600";
-  if (status === "OPEN") return "border-indigo-500 text-indigo-600";
-  return "border-gray-400 text-gray-500";
+function projectStatusTone(status: ProjectStatus) {
+  if (status === "COMPLETED") return "success" as const;
+  if (status === "SUBMITTED") return "warning" as const;
+  if (status === "IN_PROGRESS") return "brand" as const;
+  return "neutral" as const;
 }
 
 export default async function SMEDashboardPage() {
@@ -56,27 +54,22 @@ export default async function SMEDashboardPage() {
   if (!smeProfile) {
     return (
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Tổng quan Doanh nghiệp</h2>
-          <p className="text-muted-foreground text-sm">
-            Quản lý hiệu quả các bài toán chuyển đổi số của bạn
-          </p>
-        </div>
+        <PageHeader
+          eyebrow="Bảng điều phối doanh nghiệp"
+          title="Thiết lập hồ sơ doanh nghiệp trước khi đăng dự án đầu tiên."
+          description="Thông tin hồ sơ được dùng để quản lý project và điều phối ứng viên trong dashboard."
+        />
 
-        <Card className="border-dashed bg-muted/20">
-          <CardContent className="flex flex-col items-center justify-center gap-4 p-10 text-center">
-            <Building2 className="h-12 w-12 text-muted-foreground/60" />
-            <div className="space-y-1">
-              <p className="text-lg font-semibold">Bạn chưa tạo hồ sơ doanh nghiệp</p>
-              <p className="text-sm text-muted-foreground">
-                Cập nhật thông tin công ty để bắt đầu đăng dự án và nhận ứng viên.
-              </p>
-            </div>
-            <Link href="/sme/profile">
-              <Button>Tạo hồ sơ doanh nghiệp</Button>
-            </Link>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Building2}
+          title="Bạn chưa tạo hồ sơ doanh nghiệp"
+          description="Cập nhật thông tin công ty để bắt đầu đăng dự án, nhận ứng viên và theo dõi tiến độ trong cùng một quy trình."
+          action={
+            <Button asChild>
+              <Link href="/sme/profile">Tạo hồ sơ doanh nghiệp</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
@@ -96,7 +89,7 @@ export default async function SMEDashboardPage() {
     prisma.project.findMany({
       where: { smeId: smeProfile.id },
       orderBy: { createdAt: "desc" },
-      take: 3,
+      take: 4,
       select: {
         id: true,
         title: true,
@@ -111,91 +104,88 @@ export default async function SMEDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Tổng quan Doanh nghiệp</h2>
-          <p className="text-muted-foreground text-sm">Quản lý hiệu quả các bài toán chuyển đổi số của bạn</p>
-        </div>
-        <Link href="/sme/projects/new">
-          <Button className="rounded-full shadow-md"><PlusCircle className="w-4 h-4 mr-2" /> Đăng dự án mới</Button>
-        </Link>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Tổng dự án</CardTitle>
-            <FolderKanban className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{smeProfile._count.projects}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Đang diễn ra</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeProjects}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Sinh viên ứng tuyển</CardTitle>
-            <Users className="h-4 w-4 text-indigo-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalApplicants}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-4">Dự án gần đây</h3>
-        {recentProjects.length === 0 ? (
-          <Card className="border-none shadow-sm bg-white/50 backdrop-blur flex flex-col items-center justify-center h-48 text-muted-foreground">
-            <FolderKanban className="w-10 h-10 mb-4 opacity-20" />
-            <p>Bạn chưa đăng dự án nào.</p>
+      <PageHeader
+        eyebrow={smeProfile.companyName || "Bảng điều phối doanh nghiệp"}
+        title="Theo dõi project, ứng viên và trạng thái nghiệm thu trong cùng một dashboard."
+        description="Toàn bộ luồng từ tạo brief, mở dự án, nhận ứng viên đến theo dõi tiến độ được gom về một không gian làm việc thống nhất."
+        actions={
+          <Button asChild>
             <Link href="/sme/projects/new">
-              <Button variant="link" className="text-primary mt-2">Bắt đầu tạo dự án đầu tiên</Button>
+              <PlusCircle className="h-4 w-4" />
+              Tạo dự án mới
             </Link>
-          </Card>
-        ) : (
-          <Card className="border-none shadow-sm bg-white/50 backdrop-blur">
-            <CardContent className="p-0">
-              <div className="divide-y">
-                {recentProjects.map((project) => (
-                  <div
-                    className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-                    key={project.id}
-                  >
-                    <div className="space-y-1">
-                      <Link
-                        className="font-semibold hover:text-primary hover:underline"
-                        href={`/sme/projects/${project.id}`}
-                      >
-                        {project.title}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">
-                        Tạo ngày {new Date(project.createdAt).toLocaleDateString("vi-VN")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge className={projectStatusClass(project.status)} variant="outline">
-                        {projectStatusLabel(project.status)}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {project._count.applications} ứng viên
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          </Button>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label="Tổng dự án"
+          value={smeProfile._count.projects}
+          description="Tất cả project doanh nghiệp đã tạo"
+          icon={FolderKanban}
+          tone="brand"
+        />
+        <MetricCard
+          label="Đang triển khai"
+          value={activeProjects}
+          description="Bao gồm đang thực hiện và chờ nghiệm thu"
+          icon={Clock}
+          tone="warning"
+        />
+        <MetricCard
+          label="Ứng viên đã nhận"
+          value={totalApplicants}
+          description="Tổng số lượt ứng tuyển trên các project"
+          icon={Users}
+          tone="neutral"
+        />
       </div>
+
+      <SectionCard
+        title="Dự án gần đây"
+        description="Các project mới nhất của doanh nghiệp và tình trạng hiện tại."
+        action={
+          <Button asChild size="sm" variant="outline">
+            <Link href="/sme/projects">Xem tất cả</Link>
+          </Button>
+        }
+      >
+        {recentProjects.length === 0 ? (
+          <EmptyState
+            icon={FolderKanban}
+            title="Chưa có dự án nào"
+            description="Bắt đầu bằng một project đầu tiên để trải nghiệm toàn bộ luồng chuẩn hóa brief và nhận ứng viên."
+            action={
+              <Button asChild>
+                <Link href="/sme/projects/new">Tạo dự án đầu tiên</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <div className="divide-y divide-border-subtle overflow-hidden rounded-2xl border border-border-subtle">
+            {recentProjects.map((project) => (
+              <div
+                key={project.id}
+                className="flex flex-col gap-4 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="space-y-1">
+                  <Link href={`/sme/projects/${project.id}`} className="text-sm font-semibold text-text-strong hover:text-primary">
+                    {project.title}
+                  </Link>
+                  <p className="text-sm text-text-muted">
+                    Tạo ngày {new Date(project.createdAt).toLocaleDateString("vi-VN")}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <StatusChip tone={projectStatusTone(project.status)}>{projectStatusLabel(project.status)}</StatusChip>
+                  <span className="text-sm text-text-muted">{project._count.applications} ứng viên</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
     </div>
   );
 }

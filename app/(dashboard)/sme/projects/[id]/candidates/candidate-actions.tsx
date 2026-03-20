@@ -5,7 +5,7 @@ import { Check, Loader2, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 import { updateCandidateStatus } from "@/app/actions/application";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 
 type CandidateActionsProps = {
   projectId: string;

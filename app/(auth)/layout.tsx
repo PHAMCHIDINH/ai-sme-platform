@@ -1,5 +1,6 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+
+import { auth } from "@/auth";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -9,10 +10,8 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-yellow-100">
-      <div className="pointer-events-none absolute inset-0 bg-neo-grid bg-grid opacity-40" />
-      <div className="pointer-events-none absolute -left-24 top-16 h-64 w-64 rounded-full bg-violet-200 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 bottom-0 h-72 w-72 rounded-full bg-cyan-200 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(236,72,153,0.15),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(139,92,246,0.15),transparent_24%)]" />
       <div className="relative z-10">{children}</div>
     </div>
   );

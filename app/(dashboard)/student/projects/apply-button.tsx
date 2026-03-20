@@ -5,14 +5,15 @@ import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 import { applyProject } from "@/app/actions/application";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 
 type ApplyButtonProps = {
   projectId: string;
   matchScore: number;
+  className?: string;
 };
 
-export function ApplyButton({ projectId, matchScore, className }: ApplyButtonProps & { className?: string }) {
+export function ApplyButton({ projectId, matchScore, className }: ApplyButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleApply() {
@@ -38,18 +39,18 @@ export function ApplyButton({ projectId, matchScore, className }: ApplyButtonPro
 
   return (
     <Button
-      className={className || "flex-1 rounded-none shadow-none border-0 text-base font-black uppercase hover:bg-black hover:text-white transition-colors h-14"}
+      className={className}
       disabled={isLoading}
       onClick={handleApply}
       type="button"
     >
       {isLoading ? (
         <>
-          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
           Đang gửi...
         </>
       ) : (
-        "Ứng tuyển ngay"
+        "Ứng tuyển"
       )}
     </Button>
   );

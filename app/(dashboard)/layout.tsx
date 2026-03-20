@@ -1,7 +1,8 @@
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
-import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { ReactNode } from "react";
+import { redirect } from "next/navigation";
+
+import { auth } from "@/auth";
+import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 
 export default async function DashboardLayout({
   children,
@@ -19,21 +20,24 @@ export default async function DashboardLayout({
   const userName = user.name || user.email || "Người dùng";
 
   return (
-    <div className="flex h-screen bg-yellow-100/70">
-      <div className="hidden md:flex">
+    <div className="flex min-h-screen bg-transparent">
+      <div className="hidden md:block">
         <DashboardSidebar role={role} userName={userName} />
       </div>
 
-      <div className="flex h-full flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b-2 border-black bg-yellow-200 px-4 md:hidden">
-          <span className="text-base font-black">
-            VnSME<span className="text-violet-700">Match</span>
-          </span>
-          <div className="max-w-[180px] truncate text-sm font-semibold">{userName}</div>
+      <div className="flex min-h-screen flex-1 flex-col">
+        <header className="mx-4 mt-4 flex items-center justify-between rounded-2xl border-2 border-border bg-white px-4 py-4 shadow-neo-sm md:hidden">
+          <div className="space-y-0.5">
+            <div className="text-base font-bold text-text-strong">
+              VnSME<span className="text-primary">Match</span>
+            </div>
+            <div className="text-xs font-bold text-text-muted">{role === "SME" ? "Doanh nghiệp" : "Sinh viên"}</div>
+          </div>
+          <div className="max-w-[180px] truncate text-sm font-bold text-text-strong">{userName}</div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <div className="mx-auto h-full max-w-6xl space-y-8">{children}</div>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <div className="mx-auto max-w-6xl retro-page">{children}</div>
         </main>
       </div>
     </div>

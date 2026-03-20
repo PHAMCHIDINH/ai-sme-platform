@@ -6,9 +6,9 @@ import { Clock, CheckCircle2, FileText, ListTodo } from "lucide-react";
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/retroui/Card";
+import { Button } from "@/components/retroui/Button";
+import { Badge } from "@/components/retroui/Badge";
 import { ProjectProgressActions } from "./project-progress-actions";
 import { SmeEvaluationDialog } from "./sme-evaluation-dialog";
 
@@ -464,7 +464,7 @@ export default async function StudentMyProjectsPage() {
             return (
               <Card
                 key={entry.id}
-                className="border border-border/50 shadow-sm bg-white/50 backdrop-blur overflow-hidden"
+                className="bg-white overflow-hidden"
               >
                 <div className={`h-2 w-full ${statusBarClassName(entry.status)}`} />
                 <CardContent className="p-6">

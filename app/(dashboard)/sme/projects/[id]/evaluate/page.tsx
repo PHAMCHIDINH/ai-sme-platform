@@ -6,8 +6,8 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/retroui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/retroui/Card";
 import { EvaluateForm } from "./evaluate-form";
 
 type EvaluationActionResult = {
@@ -176,7 +176,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
       </div>
 
       {existingEvaluation ? (
-        <Card className="border-none bg-white/50 shadow-sm backdrop-blur">
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle>Bạn đã gửi đánh giá cho sinh viên này</CardTitle>
             <p className="text-sm text-muted-foreground">

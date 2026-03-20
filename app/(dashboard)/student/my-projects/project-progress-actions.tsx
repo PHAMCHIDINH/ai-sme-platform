@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, PlusCircle, Send } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 import {
   Dialog,
   DialogContent,
@@ -13,10 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from "@/components/retroui/Dialog";
+import { Input } from "@/components/retroui/Input";
+import { Label } from "@/components/retroui/Label";
+import { Textarea } from "@/components/retroui/Textarea";
 
 type ActionResult = {
   success?: true;

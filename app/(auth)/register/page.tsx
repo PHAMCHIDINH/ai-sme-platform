@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowRight, Layers, Loader2, Building2, GraduationCap } from "lucide-react";
+import { ArrowRight, Building2, GraduationCap, Layers, Loader2 } from "lucide-react";
 
 import { register as registerAction } from "@/app/actions/auth";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/retroui/Button";
 import {
   Card,
   CardContent,
@@ -16,17 +16,15 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/retroui/Card";
+import { Input } from "@/components/retroui/Input";
+import { Label } from "@/components/retroui/Label";
+import { cn } from "@/lib/utils";
 import { registerSchema, type RegisterInput } from "@/lib/validators/auth";
 
 function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return <p className="text-sm font-semibold text-destructive">{message}</p>;
+  if (!message) return null;
+  return <p className="text-sm font-medium text-danger">{message}</p>;
 }
 
 function RegisterForm() {
@@ -53,12 +51,8 @@ function RegisterForm() {
 
   useEffect(() => {
     const presetRole = searchParams.get("role");
-    if (presetRole === "sme") {
-      setValue("role", "SME");
-    }
-    if (presetRole === "student") {
-      setValue("role", "STUDENT");
-    }
+    if (presetRole === "sme") setValue("role", "SME");
+    if (presetRole === "student") setValue("role", "STUDENT");
   }, [searchParams, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
@@ -80,51 +74,87 @@ function RegisterForm() {
   });
 
   return (
-    <div className="w-full max-w-md">
-      <div className="mb-6 flex justify-center">
-        <Link href="/" className="inline-flex items-center gap-2 rounded-md border-2 border-black bg-white px-4 py-2 shadow-neo-sm">
-          <div className="rounded-md border-2 border-black bg-violet-200 p-1">
-            <Layers className="h-5 w-5" />
+    <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+      <div className="surface-card hidden flex-col justify-between p-8 lg:flex">
+        <div className="space-y-6">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="rounded-2xl border border-border-subtle bg-brand-100 p-2 shadow-neo-sm">
+              <Layers className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <div className="text-lg font-semibold text-text-strong">
+                VnSME<span className="text-primary">Match</span>
+              </div>
+              <div className="text-xs text-text-muted">Thiết lập tài khoản để bắt đầu luồng làm việc</div>
+            </div>
+          </Link>
+
+          <div className="space-y-3">
+            <span className="eyebrow">Tạo tài khoản theo vai trò</span>
+            <h1 className="text-4xl font-semibold leading-tight text-text-strong">
+              Mỗi vai trò có một không gian điều phối riêng, nhưng cùng nằm trên một quy trình sản phẩm thống nhất.
+            </h1>
+            <p className="max-w-lg text-base leading-8 text-text-muted">
+              Doanh nghiệp dùng hệ thống để chuẩn hóa brief và quản lý dự án. Sinh viên dùng hệ thống để xây hồ sơ,
+              nhận gợi ý và theo dõi tiến độ công việc thực tế.
+            </p>
           </div>
-          <span className="text-xl font-black">
-            VnSME<span className="text-violet-700">Match</span>
-          </span>
-        </Link>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="surface-card-muted p-4">
+            <div className="text-sm font-semibold text-text-strong">Doanh nghiệp</div>
+            <p className="mt-2 text-sm leading-7 text-text-muted">
+              Tạo project, theo dõi ứng viên, quản lý tiến độ và nghiệm thu đầu ra.
+            </p>
+          </div>
+          <div className="surface-card-muted p-4">
+            <div className="text-sm font-semibold text-text-strong">Sinh viên</div>
+            <p className="mt-2 text-sm leading-7 text-text-muted">
+              Hoàn thiện hồ sơ, nhận gợi ý phù hợp và tham gia các dự án thực chiến từ SME.
+            </p>
+          </div>
+        </div>
       </div>
 
       <Card className="bg-white">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl">Tham gia nền tảng</CardTitle>
-          <CardDescription>Đăng ký để bắt đầu kết nối dự án thực chiến</CardDescription>
+        <CardHeader className="space-y-2">
+          <CardTitle className="text-2xl">Tạo tài khoản</CardTitle>
+          <CardDescription>Chọn vai trò phù hợp để bắt đầu sử dụng nền tảng.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={onSubmit}>
+          <form className="space-y-5" onSubmit={onSubmit}>
             <input type="hidden" {...register("role")} />
 
-            <div className="mb-4 grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <button
-                className={`flex flex-col items-center justify-center rounded-md border-2 border-black p-4 font-bold transition-colors ${
+                className={cn(
+                  "rounded-2xl border p-4 text-left transition-colors",
                   role === "STUDENT"
-                    ? "bg-violet-200"
-                    : "bg-white hover:bg-yellow-200"
-                }`}
+                    ? "border-primary/20 bg-brand-100 shadow-neo-sm"
+                    : "border-border-subtle bg-white hover:bg-surface-muted",
+                )}
                 onClick={() => setValue("role", "STUDENT", { shouldValidate: true })}
                 type="button"
               >
-                <GraduationCap className="mb-2 h-6 w-6" />
-                <span>Sinh viên</span>
+                <GraduationCap className="h-5 w-5 text-primary" />
+                <div className="mt-3 text-sm font-semibold text-text-strong">Sinh viên</div>
+                <div className="mt-1 text-xs leading-6 text-text-muted">Tìm dự án phù hợp và xây kinh nghiệm thực tế.</div>
               </button>
+
               <button
-                className={`flex flex-col items-center justify-center rounded-md border-2 border-black p-4 font-bold transition-colors ${
+                className={cn(
+                  "rounded-2xl border p-4 text-left transition-colors",
                   role === "SME"
-                    ? "bg-cyan-200"
-                    : "bg-white hover:bg-yellow-200"
-                }`}
+                    ? "border-primary/20 bg-brand-100 shadow-neo-sm"
+                    : "border-border-subtle bg-white hover:bg-surface-muted",
+                )}
                 onClick={() => setValue("role", "SME", { shouldValidate: true })}
                 type="button"
               >
-                <Building2 className="mb-2 h-6 w-6" />
-                <span>Doanh nghiệp</span>
+                <Building2 className="h-5 w-5 text-primary" />
+                <div className="mt-3 text-sm font-semibold text-text-strong">Doanh nghiệp</div>
+                <div className="mt-1 text-xs leading-6 text-text-muted">Chuẩn hóa nhu cầu và điều phối dự án với sinh viên.</div>
               </button>
             </div>
             <FieldError message={errors.role?.message} />
@@ -141,50 +171,41 @@ function RegisterForm() {
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                placeholder="name@example.com"
-                type="email"
-                {...register("email")}
-              />
+              <Input id="email" placeholder="name@example.com" type="email" {...register("email")} />
               <FieldError message={errors.email?.message} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password">Mật khẩu</Label>
-              <Input
-                autoComplete="new-password"
-                id="password"
-                type="password"
-                {...register("password")}
-              />
+              <Input autoComplete="new-password" id="password" type="password" {...register("password")} />
               <FieldError message={errors.password?.message} />
             </div>
 
             {serverError ? (
-              <div className="rounded-md border-2 border-black bg-red-200 p-3 text-sm font-semibold">
+              <div className="rounded-2xl border border-danger/20 bg-red-50 px-4 py-3 text-sm text-danger">
                 {serverError}
               </div>
             ) : null}
 
-            <Button className="mt-4 w-full" disabled={isSubmitting} type="submit">
+            <Button className="w-full" disabled={isSubmitting} type="submit">
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Đang tạo tài khoản...
                 </>
               ) : (
                 <>
-                  Tạo tài khoản <ArrowRight className="ml-2 h-4 w-4" />
+                  Tạo tài khoản
+                  <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-3 text-center text-sm font-medium text-muted-foreground">
+        <CardFooter className="flex flex-col gap-3 text-center text-sm text-text-muted">
           <div>
             Đã có tài khoản?{" "}
-            <Link href="/login" className="font-black underline-offset-4 hover:underline">
+            <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
               Đăng nhập ngay
             </Link>
           </div>
@@ -196,10 +217,10 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="page-wrap flex min-h-screen items-center py-10">
       <Suspense
         fallback={
-          <div className="animate-spin text-foreground">
+          <div className="mx-auto animate-spin text-foreground">
             <Loader2 className="h-8 w-8" />
           </div>
         }
