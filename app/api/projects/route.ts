@@ -81,12 +81,13 @@ export async function GET() {
   try {
     const session = await auth();
     const userId = getSessionUserId(session);
+    const role = session?.user?.role;
 
-    if (!userId) {
+    if (!userId || !role) {
       return unauthorizedResponse();
     }
 
-    if (session.user.role === "SME") {
+    if (role === "SME") {
       const smeProfile = await prisma.sMEProfile.findUnique({
         where: { userId }
       });

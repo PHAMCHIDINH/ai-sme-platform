@@ -62,7 +62,11 @@ Dich vu duoc tao:
 - `db`: PostgreSQL 16 (`localhost:5432`)
 - `app`: Next.js app (`http://localhost:3000`)
 
-App se tu dong chay `prisma db push` khi start de dong bo schema.
+App khong tu dong chay `db push` khi start. Neu can dong bo schema, chay co kiem soat:
+
+```bash
+docker exec -it ai-sme-app npm run db:migrate:deploy
+```
 
 ### 3) Xem log
 
@@ -88,11 +92,21 @@ docker compose down -v
 ```bash
 npm run db:up
 npm run db:down
+npm run db:migrate:deploy
 npm run analyze
 npm run docker:up
 npm run docker:logs
 npm run docker:down
 ```
+
+Seed demo (destructive, khong dung production):
+
+```bash
+npm run db:seed:demo
+```
+
+Huong dan day du ve `ALLOW_DESTRUCTIVE_SEED`, cach set env dung cho `bash/PowerShell/cmd`, va checklist tranh xoa nham du lieu:
+- `docs/seed-safety.md`
 
 ## Frontend libraries
 
@@ -118,3 +132,4 @@ Lenh nay se build app voi bundle analyzer de xem package/chunk nao dang chiem nh
 
 Tai lieu chi tiet:
 - `docs/frontend-libraries.md`
+- `docs/team-runbook-1-page.md`

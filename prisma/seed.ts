@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { randomBytes } from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -446,8 +447,21 @@ function deterministicEmbedding(seed: string, dimensions = EMBEDDING_DIMENSIONS)
 }
 
 async function main() {
+  const allowDestructiveSeed = process.env.ALLOW_DESTRUCTIVE_SEED === "true";
+  if (!allowDestructiveSeed) {
+    throw new Error(
+      "Seed bị chặn vì có thao tác xóa dữ liệu. Chỉ chạy khi set ALLOW_DESTRUCTIVE_SEED=true.",
+    );
+  }
+
+  const rawSeedPassword = process.env.SEED_DEFAULT_PASSWORD?.trim();
+  const plainPassword =
+    rawSeedPassword && rawSeedPassword.length >= 12
+      ? rawSeedPassword
+      : randomBytes(12).toString("base64url");
+
   console.log("🌱 Bắt đầu seed dữ liệu mẫu...");
-  const password = await hash("password123", 10);
+  const password = await hash(plainPassword, 10);
   const seededStudents: SeededStudent[] = [];
   const seededProjects: SeededProject[] = [];
 
@@ -782,7 +796,7 @@ async function main() {
     `   • Trạng thái dự án: ${statusSummary.map((item) => `${item.status}: ${item._count._all}`).join(", ")}`,
   );
   console.log(`   • Embedding: ${projectsWithEmbedding} dự án, ${studentsWithEmbedding} sinh viên`);
-  console.log("\n🔑 Mật khẩu mặc định: password123");
+  console.log(`\n🔑 Mật khẩu seed hiện tại: ${plainPassword}`);
 }
 
 main()

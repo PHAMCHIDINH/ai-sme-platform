@@ -1,5 +1,4 @@
 import type { Session } from "next-auth";
-import type { auth } from "@/auth";
 
 export type AppRole = "SME" | "STUDENT";
 export type AuthSession = Session | null;

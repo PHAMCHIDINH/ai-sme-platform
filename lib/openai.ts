@@ -20,6 +20,7 @@ const rawEmbeddingModel = process.env.OPENAI_EMBEDDING_MODEL?.trim() || "";
 const embeddingModel = EMBEDDING_DISABLED_VALUES.has(rawEmbeddingModel.toLowerCase())
   ? ""
   : rawEmbeddingModel || (isOpenRouter ? OPENROUTER_EMBEDDING_MODEL : OPENAI_EMBEDDING_MODEL);
+const fallbackCounts = new Map<string, number>();
 
 export const chatModelStr = chatModel;
 export const openaiInstance = apiKey
@@ -50,6 +51,40 @@ export function getAIConfigStatus() {
   };
 }
 
+function incrementFallbackCount(scope: "standardizeBrief" | "generateEmbedding", reason: string) {
+  const key = `${scope}:${reason}`;
+  const count = (fallbackCounts.get(key) ?? 0) + 1;
+  fallbackCounts.set(key, count);
+  return count;
+}
+
+function logAIFallback(
+  scope: "standardizeBrief" | "generateEmbedding",
+  reason: string,
+  extra?: Record<string, unknown>,
+) {
+  const count = incrementFallbackCount(scope, reason);
+  console.warn(`[AI:${scope}] fallback activated`, {
+    reason,
+    count,
+    provider: isOpenRouter ? "openrouter" : "openai",
+    chatModel: chatModelStr,
+    embeddingEnabled: Boolean(embeddingModel),
+    ...extra,
+  });
+}
+
+function logAIFailure(scope: "standardizeBrief" | "generateEmbedding", error: unknown) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "Unknown AI error";
+
+  logAIFallback(scope, "provider_error", { message });
+}
+
 function fallbackBrief() {
   return [
     "Muc tieu: Lam ro bai toan SME dang gap.",
@@ -65,6 +100,7 @@ export async function standardizeBrief(rawBrief: string) {
   }
 
   if (!openaiInstance) {
+    logAIFallback("standardizeBrief", "missing_api_key");
     return fallbackBrief();
   }
 
@@ -85,14 +121,31 @@ export async function standardizeBrief(rawBrief: string) {
       temperature: 0.2,
     });
 
-    return completion.choices[0]?.message?.content ?? fallbackBrief();
-  } catch {
+    const normalizedBrief = completion.choices[0]?.message?.content?.trim();
+    if (normalizedBrief) {
+      return normalizedBrief;
+    }
+
+    logAIFallback("standardizeBrief", "empty_provider_response");
+    return fallbackBrief();
+  } catch (error) {
+    logAIFailure("standardizeBrief", error);
     return fallbackBrief();
   }
 }
 
 export async function generateEmbedding(text: string) {
-  if (!text.trim() || !openaiInstance || !embeddingModel) {
+  if (!text.trim()) {
+    return [] as number[];
+  }
+
+  if (!openaiInstance) {
+    logAIFallback("generateEmbedding", "missing_api_key");
+    return [] as number[];
+  }
+
+  if (!embeddingModel) {
+    logAIFallback("generateEmbedding", "embedding_disabled");
     return [] as number[];
   }
 
@@ -102,8 +155,15 @@ export async function generateEmbedding(text: string) {
       input: text,
     });
 
-    return response.data[0]?.embedding ?? [];
-  } catch {
+    const generatedEmbedding = response.data[0]?.embedding;
+    if (generatedEmbedding && generatedEmbedding.length > 0) {
+      return generatedEmbedding;
+    }
+
+    logAIFallback("generateEmbedding", "empty_provider_response");
+    return [] as number[];
+  } catch (error) {
+    logAIFailure("generateEmbedding", error);
     return [] as number[];
   }
 }
