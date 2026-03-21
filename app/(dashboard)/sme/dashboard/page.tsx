@@ -1,43 +1,21 @@
 import Link from "next/link";
-import { ProjectStatus } from "@prisma/client";
 import { FolderKanban, Users, Clock, PlusCircle, Building2 } from "lucide-react";
 
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
+import { projectStatusClassName, projectStatusLabel } from "@/lib/services/project/presenter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-function projectStatusLabel(status: ProjectStatus) {
-  switch (status) {
-    case "OPEN":
-      return "Đang mở";
-    case "IN_PROGRESS":
-      return "Đang tiến hành";
-    case "SUBMITTED":
-      return "Chờ nghiệm thu";
-    case "COMPLETED":
-      return "Hoàn thành";
-    default:
-      return "Nháp";
-  }
-}
-
-function projectStatusClass(status: ProjectStatus) {
-  if (status === "COMPLETED") return "border-green-500 text-green-600";
-  if (status === "SUBMITTED") return "border-amber-500 text-amber-600";
-  if (status === "IN_PROGRESS") return "border-blue-500 text-blue-600";
-  if (status === "OPEN") return "border-indigo-500 text-indigo-600";
-  return "border-gray-400 text-gray-500";
-}
 
 export default async function SMEDashboardPage() {
   const session = await auth();
   const smeUserId = getSessionUserIdByRole(session, "SME");
 
   if (!smeUserId) {
-    return <div>Unauthorized</div>;
+    return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
   }
 
   const smeProfile = await prisma.sMEProfile.findUnique({
@@ -182,7 +160,7 @@ export default async function SMEDashboardPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge className={projectStatusClass(project.status)} variant="outline">
+                      <Badge className={projectStatusClassName(project.status)} variant="outline">
                         {projectStatusLabel(project.status)}
                       </Badge>
                       <span className="text-sm text-muted-foreground">

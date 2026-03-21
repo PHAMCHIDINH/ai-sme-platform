@@ -13,7 +13,7 @@ export function InviteAction({ projectId, studentId }: { projectId: string; stud
     setIsLoading(true);
     try {
       const res = await inviteStudent(projectId, studentId);
-      if (res.error) toast.error(res.error);
+      if (!res.ok) toast.error(res.error);
       else toast.success("Đã gửi lời mời hợp tác thành công!");
     } catch {
       toast.error("Lỗi khi gửi lời mời.");

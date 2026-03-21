@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ type ProjectApplication = {
 export default async function CandidatesPage({ params }: { params: { id: string } }) {
   const session = await auth();
   const smeUserId = getSessionUserIdByRole(session, "SME");
-  if (!smeUserId) return <div>Unauthorized</div>;
+  if (!smeUserId) return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
 
   const project = await prisma.project.findUnique({
     where: { id: params.id },
@@ -37,7 +38,7 @@ export default async function CandidatesPage({ params }: { params: { id: string 
   });
 
   if (!project) return notFound();
-  if (project.sme.userId !== smeUserId) return <div>Unauthorized</div>;
+  if (project.sme.userId !== smeUserId) return <div>{ACCESS_MESSAGES.FORBIDDEN_PAGE}</div>;
 
   const applicantIds = project.applications.map((app) => app.studentId);
   const applicationMap = new Map(project.applications.map((app) => [app.studentId, app]));

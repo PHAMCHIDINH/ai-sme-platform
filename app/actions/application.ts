@@ -4,85 +4,92 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
-import { prisma } from "@/lib/prisma";
+import { canAcceptCandidateStatus, canAcceptInvitation, canProjectAcceptCandidates } from "@/lib/domain/lifecycle-rules";
+import { applicationActionErrorMessage, type ApplicationActionErrorCode } from "@/lib/services/errors/application-action-errors";
+import {
+  DEFAULT_DEADLINE_MS,
+  LifecycleConflictError,
+  applyAcceptanceBySme,
+  applyInvitationAcceptanceByStudent,
+  rejectInvitationByStudent,
+  rejectPendingCandidateBySme,
+} from "@/lib/services/application-lifecycle";
+import {
+  createApplication,
+  findApplicationStatusByProjectAndStudent,
+  findApplicationWithProjectByProjectAndStudent,
+  findProjectSummaryById,
+  findProjectWithSmeById,
+  findStudentProfileByUserId,
+  withApplicationTransaction,
+} from "@/lib/repos/application-repo";
+import { err, ok, type Result } from "@/lib/types/result";
 
-const DEFAULT_DEADLINE_MS = 30 * 24 * 60 * 60 * 1000;
+type ApplicationActionResult = Result<null, ApplicationActionErrorCode>;
 
-export async function applyProject(projectId: string, matchScore: number) {
+function success(): ApplicationActionResult {
+  return ok(null);
+}
+
+function failure(code: ApplicationActionErrorCode, overrideMessage?: string): ApplicationActionResult {
+  return err(code, overrideMessage ?? applicationActionErrorMessage(code));
+}
+
+export async function applyProject(projectId: string, matchScore: number): Promise<ApplicationActionResult> {
   try {
     const session = await auth();
     const studentUserId = getSessionUserIdByRole(session, "STUDENT");
 
     if (!studentUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return failure("UNAUTHORIZED");
     }
 
-    const profile = await prisma.studentProfile.findUnique({
-      where: { userId: studentUserId },
-    });
+    const profile = await findStudentProfileByUserId(studentUserId);
 
     if (!profile) {
-      return { error: "Không tìm thấy hồ sơ sinh viên." };
+      return failure("STUDENT_PROFILE_NOT_FOUND");
     }
 
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      select: {
-        id: true,
-        status: true,
-      },
-    });
+    const project = await findProjectSummaryById(projectId);
 
     if (!project) {
-      return { error: "Dự án không tồn tại." };
+      return failure("PROJECT_NOT_FOUND");
     }
 
-    if (project.status !== "OPEN") {
-      return { error: "Dự án đã đóng ứng tuyển." };
+    if (!canProjectAcceptCandidates(project.status)) {
+      return failure("PROJECT_CLOSED");
     }
 
-    const existingApplication = await prisma.application.findUnique({
-      where: {
-        projectId_studentId: {
-          projectId,
-          studentId: profile.id,
-        },
-      },
-      select: {
-        status: true,
-      },
-    });
+    const existingApplication = await findApplicationStatusByProjectAndStudent(projectId, profile.id);
 
     if (existingApplication) {
       if (existingApplication.status === "PENDING") {
-        return { error: "Bạn đã ứng tuyển dự án này rồi." };
+        return failure("ALREADY_APPLIED");
       }
 
       if (existingApplication.status === "ACCEPTED") {
-        return { error: "Bạn đã được chấp nhận vào dự án này." };
+        return failure("ALREADY_ACCEPTED");
       }
 
-      return { error: "Hồ sơ ứng tuyển trước đó của bạn đã bị từ chối." };
+      return failure("APPLICATION_ALREADY_REJECTED");
     }
 
     const safeMatchScore = Number.isFinite(matchScore)
       ? Math.max(0, Math.min(100, Math.round(matchScore)))
       : 0;
 
-    await prisma.application.create({
-      data: {
-        projectId,
-        studentId: profile.id,
-        status: "PENDING",
-        matchScore: safeMatchScore,
-      },
+    await createApplication({
+      projectId,
+      studentId: profile.id,
+      status: "PENDING",
+      matchScore: safeMatchScore,
     });
 
     revalidatePath("/student/projects");
-    return { success: true as const };
+    return success();
   } catch (error) {
     console.error("applyProject error:", error);
-    return { error: "Không thể ứng tuyển lúc này. Vui lòng thử lại." };
+    return failure("INTERNAL_ERROR", "Không thể ứng tuyển lúc này. Vui lòng thử lại.");
   }
 }
 
@@ -90,108 +97,59 @@ export async function updateCandidateStatus(
   projectId: string,
   studentId: string,
   status: "ACCEPTED" | "REJECTED",
-) {
+): Promise<ApplicationActionResult> {
   try {
     const session = await auth();
     const smeUserId = getSessionUserIdByRole(session, "SME");
 
     if (!smeUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return failure("UNAUTHORIZED");
     }
 
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: { sme: true },
-    });
+    const project = await findProjectWithSmeById(projectId);
 
     if (!project) {
-      return { error: "Không tìm thấy dự án." };
+      return failure("PROJECT_NOT_FOUND");
     }
 
     if (project.sme.userId !== smeUserId) {
-      return { error: "Bạn không sở hữu dự án này." };
+      return failure("PROJECT_NOT_OWNED");
     }
 
-    if (project.status !== "OPEN") {
-      return { error: "Dự án đã chốt ứng viên, không thể thay đổi trạng thái hồ sơ." };
+    if (!canProjectAcceptCandidates(project.status)) {
+      return failure("PROJECT_STATUS_LOCKED");
     }
 
-    const application = await prisma.application.findUnique({
-      where: {
-        projectId_studentId: {
-          projectId,
-          studentId,
-        },
-      },
-      select: {
-        status: true,
-      },
-    });
+    const application = await findApplicationStatusByProjectAndStudent(projectId, studentId);
 
     if (!application) {
-      return { error: "Ứng viên chưa nộp hồ sơ cho dự án này." };
+      return failure("APPLICATION_NOT_FOUND");
     }
 
-    if (application.status !== "PENDING") {
+    if (!canAcceptCandidateStatus(application.status)) {
       if (application.status === "ACCEPTED") {
-        return { error: "Ứng viên này đã được chấp nhận trước đó." };
+        return failure("CANDIDATE_ALREADY_ACCEPTED");
       }
 
-      return { error: "Ứng viên này đã bị từ chối trước đó." };
+      return failure("CANDIDATE_ALREADY_REJECTED");
     }
 
     const deadline = project.deadline ?? new Date(Date.now() + DEFAULT_DEADLINE_MS);
 
-    await prisma.$transaction(async (tx) => {
+    await withApplicationTransaction(async (tx) => {
       if (status === "ACCEPTED") {
-        await tx.application.update({
-          where: {
-            projectId_studentId: {
-              projectId,
-              studentId,
-            },
-          },
-          data: { status: "ACCEPTED" },
+        await applyAcceptanceBySme(tx, {
+          projectId,
+          studentId,
+          deadline,
         });
-
-        await tx.application.updateMany({
-          where: {
-            projectId,
-            studentId: { not: studentId },
-            status: "PENDING",
-          },
-          data: { status: "REJECTED" },
-        });
-
-        await tx.projectProgress.upsert({
-          where: { projectId },
-          create: {
-            projectId,
-            studentId,
-            status: "NOT_STARTED",
-            deadline,
-          },
-          update: {
-            studentId,
-            deadline,
-          },
-        });
-
-        await tx.project.update({
-          where: { id: projectId },
-          data: { status: "IN_PROGRESS" },
-        });
-      } else {
-        await tx.application.update({
-          where: {
-            projectId_studentId: {
-              projectId,
-              studentId,
-            },
-          },
-          data: { status: "REJECTED" },
-        });
+        return;
       }
+
+      await rejectPendingCandidateBySme(tx, {
+        projectId,
+        studentId,
+      });
     });
 
     revalidatePath(`/sme/projects/${projectId}/candidates`);
@@ -199,142 +157,118 @@ export async function updateCandidateStatus(
     revalidatePath("/sme/projects");
     revalidatePath("/student/projects");
     revalidatePath("/student/my-projects");
-    return { success: true as const };
+    return success();
   } catch (error) {
+    if (error instanceof LifecycleConflictError) {
+      return failure("CONFLICT", error.message);
+    }
+
     console.error("updateCandidateStatus error:", error);
-    return { error: "Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại." };
+    return failure("INTERNAL_ERROR", "Không thể cập nhật trạng thái ứng viên. Vui lòng thử lại.");
   }
 }
 
-export async function inviteStudent(projectId: string, studentId: string) {
+export async function inviteStudent(projectId: string, studentId: string): Promise<ApplicationActionResult> {
   try {
     const session = await auth();
     const smeUserId = getSessionUserIdByRole(session, "SME");
 
     if (!smeUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return failure("UNAUTHORIZED");
     }
 
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: { sme: true },
-    });
+    const project = await findProjectWithSmeById(projectId);
 
     if (!project || project.sme.userId !== smeUserId) {
-      return { error: "Dự án không tồn tại hoặc bạn không có quyền." };
-    }
-    if (project.status !== "OPEN") {
-      return { error: "Dự án không còn tuyển người." };
+      return failure("PROJECT_NOT_FOUND_OR_FORBIDDEN");
     }
 
-    const existingApplication = await prisma.application.findUnique({
-      where: {
-        projectId_studentId: { projectId, studentId },
-      },
-    });
+    if (!canProjectAcceptCandidates(project.status)) {
+      return failure("PROJECT_NOT_RECRUITING");
+    }
+
+    const existingApplication = await findApplicationStatusByProjectAndStudent(projectId, studentId);
 
     if (existingApplication) {
-      return { error: "Đã có tương tác (đã mời / đã ứng tuyển) với sinh viên này." };
+      return failure("ALREADY_HAS_INTERACTION");
     }
 
-    await prisma.application.create({
-      data: {
-        projectId,
-        studentId,
-        status: "INVITED",
-        initiatedBy: "SME",
-      },
+    await createApplication({
+      projectId,
+      studentId,
+      status: "INVITED",
+      initiatedBy: "SME",
     });
 
     revalidatePath("/sme/students");
-    return { success: true as const };
+    return success();
   } catch (error) {
     console.error("inviteStudent error:", error);
-    return { error: "Có lỗi xảy ra khi gửi lời mời." };
+    return failure("INTERNAL_ERROR", "Có lỗi xảy ra khi gửi lời mời.");
   }
 }
 
-export async function respondToInvitation(projectId: string, status: "ACCEPTED" | "REJECTED") {
+export async function respondToInvitation(
+  projectId: string,
+  status: "ACCEPTED" | "REJECTED",
+): Promise<ApplicationActionResult> {
   try {
     const session = await auth();
     const studentUserId = getSessionUserIdByRole(session, "STUDENT");
 
     if (!studentUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return failure("UNAUTHORIZED");
     }
 
-    const profile = await prisma.studentProfile.findUnique({
-      where: { userId: studentUserId },
-    });
+    const profile = await findStudentProfileByUserId(studentUserId);
 
     if (!profile) {
-      return { error: "Không tìm thấy hồ sơ của bạn." };
+      return failure("STUDENT_PROFILE_NOT_FOUND", "Không tìm thấy hồ sơ của bạn.");
     }
 
-    const application = await prisma.application.findUnique({
-      where: {
-        projectId_studentId: { projectId, studentId: profile.id },
-      },
-      include: { project: true },
-    });
+    const application = await findApplicationWithProjectByProjectAndStudent(projectId, profile.id);
 
-    if (!application || application.status !== "INVITED" || application.initiatedBy !== "SME") {
-      return { error: "Không tìm thấy lời mời hợp lệ." };
+    if (
+      !application ||
+      !canAcceptInvitation({
+        status: application.status,
+        initiatedBy: application.initiatedBy,
+      })
+    ) {
+      return failure("INVITATION_NOT_FOUND");
     }
 
-    if (application.project.status !== "OPEN") {
-      return { error: "Dự án đã đóng hoặc đã có người nhận." };
+    if (!canProjectAcceptCandidates(application.project.status)) {
+      return failure("PROJECT_ALREADY_ASSIGNED");
     }
 
     const deadline = application.project.deadline ?? new Date(Date.now() + DEFAULT_DEADLINE_MS);
 
-    await prisma.$transaction(async (tx) => {
+    await withApplicationTransaction(async (tx) => {
       if (status === "ACCEPTED") {
-        await tx.application.update({
-          where: { id: application.id },
-          data: { status: "ACCEPTED" },
+        await applyInvitationAcceptanceByStudent(tx, {
+          applicationId: application.id,
+          projectId,
+          studentId: profile.id,
+          deadline,
         });
-
-        await tx.application.updateMany({
-          where: {
-            projectId,
-            studentId: { not: profile.id },
-            status: { in: ["PENDING", "INVITED"] },
-          },
-          data: { status: "REJECTED" },
-        });
-
-        await tx.projectProgress.upsert({
-          where: { projectId },
-          create: {
-            projectId,
-            studentId: profile.id,
-            status: "NOT_STARTED",
-            deadline,
-          },
-          update: {
-            studentId: profile.id,
-            deadline,
-          },
-        });
-
-        await tx.project.update({
-          where: { id: projectId },
-          data: { status: "IN_PROGRESS" },
-        });
-      } else {
-        await tx.application.update({
-          where: { id: application.id },
-          data: { status: "REJECTED" },
-        });
+        return;
       }
+
+      await rejectInvitationByStudent(tx, {
+        applicationId: application.id,
+      });
     });
 
     revalidatePath("/student/dashboard");
     revalidatePath("/student/projects");
-    return { success: true as const };
+    return success();
   } catch (error) {
+    if (error instanceof LifecycleConflictError) {
+      return failure("CONFLICT", error.message);
+    }
+
     console.error("respondToInvitation error:", error);
-    return { error: "Không thể phản hồi lúc này." };
+    return failure("INTERNAL_ERROR", "Không thể phản hồi lúc này.");
   }
 }

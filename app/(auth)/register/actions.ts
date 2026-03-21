@@ -1,11 +1,10 @@
 "use server";
 
 import { Role } from "@prisma/client";
-import { hash } from "bcryptjs";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { prisma } from "@/lib/prisma";
+import { registerUserAndProfile } from "@/lib/services/register";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -27,43 +26,9 @@ export async function registerAction(formData: FormData) {
     redirect("/register?error=invalid_input");
   }
 
-  const existed = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (existed) {
+  const result = await registerUserAndProfile(parsed.data);
+  if (!result.ok && result.code === "EMAIL_EXISTS") {
     redirect("/register?error=email_exists");
-  }
-
-  const password = await hash(parsed.data.password, 10);
-
-  const user = await prisma.user.create({
-    data: {
-      name: parsed.data.name,
-      email: parsed.data.email,
-      password,
-      role: parsed.data.role,
-    },
-  });
-
-  if (parsed.data.role === "SME") {
-    await prisma.sMEProfile.create({
-      data: {
-        userId: user.id,
-        companyName: `${parsed.data.name} Company`,
-        industry: "General",
-        companySize: "1-10",
-        description: "SME moi dang cap nhat profile",
-      },
-    });
-  }
-
-  if (parsed.data.role === "STUDENT") {
-    await prisma.studentProfile.create({
-      data: {
-        userId: user.id,
-        university: "",
-        major: "",
-        availability: "Part-time",
-      },
-    });
   }
 
   redirect("/login?registered=1");

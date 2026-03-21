@@ -50,8 +50,8 @@ export default function LoginPage() {
     formData.set("password", values.password);
 
     const result = await authenticate(undefined, formData);
-    if (result) {
-      setServerError(result);
+    if (!result.ok) {
+      setServerError(result.error);
     }
   });
 

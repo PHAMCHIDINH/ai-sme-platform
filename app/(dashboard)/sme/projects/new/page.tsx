@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { buildProjectFormPrefillPatch } from "@/lib/services/chat-brief/prefill";
 import { projectFormSchema, type ProjectFormInput } from "@/lib/validators/project";
 import { cn } from "@/lib/utils";
 
@@ -66,8 +67,9 @@ export default function NewProjectPage() {
     control,
     register,
     setValue,
+    getValues,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, dirtyFields },
   } = useForm<ProjectFormInput>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
@@ -113,10 +115,14 @@ export default function NewProjectPage() {
       ]);
 
       if (data.parsedData) {
-        Object.entries(data.parsedData).forEach(([key, val]) => {
-          if (val && typeof val === "string" && val.trim() !== "" && val !== "null") {
-            setValue(key as keyof ProjectFormInput, val, { shouldValidate: true, shouldDirty: true });
-          }
+        const patch = buildProjectFormPrefillPatch({
+          parsedData: data.parsedData,
+          currentValues: getValues(),
+          dirtyFields,
+        });
+
+        Object.entries(patch).forEach(([key, val]) => {
+          setValue(key as keyof ProjectFormInput, val, { shouldValidate: true, shouldDirty: false });
         });
       }
     },

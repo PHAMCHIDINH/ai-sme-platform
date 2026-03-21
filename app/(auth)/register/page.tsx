@@ -71,12 +71,12 @@ function RegisterForm() {
     formData.set("role", values.role);
 
     const result = await registerAction(undefined, formData);
-    if (result === "SUCCESS") {
+    if (result.ok) {
       router.push("/login?registered=true");
       return;
     }
 
-    setServerError(result || "Lỗi không xác định");
+    setServerError(result.error || "Lỗi không xác định");
   });
 
   return (

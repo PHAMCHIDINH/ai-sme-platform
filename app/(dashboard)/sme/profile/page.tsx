@@ -3,20 +3,17 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
+import { actionFailure, actionSuccess, type FormActionResult } from "@/lib/types/action-result";
 import { smeProfileSchema, type SmeProfileInput } from "@/lib/validators/sme-profile";
 import { SmeProfileForm } from "./sme-profile-form";
-
-type ActionResult = {
-  success?: true;
-  error?: string;
-};
 
 export default async function SmeProfilePage() {
   const session = await auth();
   const smeUserId = getSessionUserIdByRole(session, "SME");
 
   if (!smeUserId) {
-    return <div>Unauthorized</div>;
+    return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
   }
 
   const existingProfile = await prisma.sMEProfile.findUnique({
@@ -36,14 +33,14 @@ export default async function SmeProfilePage() {
     description: existingProfile?.description ?? "",
   };
 
-  async function updateSmeProfile(formData: FormData): Promise<ActionResult> {
+  async function updateSmeProfile(formData: FormData): Promise<FormActionResult> {
     "use server";
 
     const activeSession = await auth();
     const activeSmeUserId = getSessionUserIdByRole(activeSession, "SME");
 
     if (!activeSmeUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return actionFailure("Bạn không có quyền thực hiện thao tác này.");
     }
 
     const parsed = smeProfileSchema.safeParse({
@@ -54,7 +51,7 @@ export default async function SmeProfilePage() {
     });
 
     if (!parsed.success) {
-      return { error: parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ." };
+      return actionFailure(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
     }
 
     await prisma.sMEProfile.upsert({
@@ -69,7 +66,7 @@ export default async function SmeProfilePage() {
     revalidatePath("/sme/profile");
     revalidatePath("/sme/dashboard");
     revalidatePath("/sme/projects");
-    return { success: true };
+    return actionSuccess();
   }
 
   return (

@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
+import { projectStatusClassName, projectStatusLabel } from "@/lib/services/project/presenter";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -13,7 +15,7 @@ export default async function SMEProjectsPage() {
   const smeUserId = getSessionUserIdByRole(session, "SME");
 
   if (!smeUserId) {
-    return <div>Unauthorized</div>;
+    return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
   }
 
   const smeProfile = await prisma.sMEProfile.findUnique({
@@ -73,17 +75,9 @@ export default async function SMEProjectsPage() {
                 <div className="p-5 bg-white">
                   <div className="flex justify-between items-start mb-4">
                     <Badge variant="outline" className={`border-2 border-black bg-white uppercase font-black px-3 py-1 shadow-neo-sm text-xs ${
-                        project.status === "OPEN" ? "text-green-600 border-green-600" :
-                        project.status === "IN_PROGRESS" ? "text-blue-600 border-blue-600" :
-                        project.status === "SUBMITTED" ? "text-amber-600 border-amber-600" :
-                        project.status === "COMPLETED" ? "text-violet-600 border-violet-600" :
-                        "text-gray-600 border-gray-600"
+                        projectStatusClassName(project.status)
                     }`}>
-                      {project.status === "OPEN" ? "Đang mở" :
-                        project.status === "IN_PROGRESS" ? "Đang tiến hành" :
-                        project.status === "SUBMITTED" ? "Chờ nghiệm thu" :
-                        project.status === "COMPLETED" ? "Hoàn thành" :
-                        "Nháp"}
+                      {projectStatusLabel(project.status)}
                     </Badge>
                     <span className="text-xs font-bold text-black border-2 border-black px-2 py-1 bg-gray-100 rounded-md shadow-neo-sm flex items-center">
                       <CalendarDays className="w-3 h-3 mr-1" />

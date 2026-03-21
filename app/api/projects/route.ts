@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     });
 
     if (!smeProfile) {
-      return NextResponse.json({ error: "SME Profile not found" }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy hồ sơ doanh nghiệp." }, { status: 404 });
     }
 
     const embedding = await generateEmbedding(
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ project });
   } catch (error) {
     console.error("Create Project Error:", error);
-    return handlePrismaApiError(error, "Failed to create project");
+    return handlePrismaApiError(error, "Không thể tạo dự án lúc này.");
   }
 }
 
@@ -86,7 +86,7 @@ export async function GET() {
       return unauthorizedResponse();
     }
 
-    if (session.user.role === "SME") {
+    if (session?.user?.role === "SME") {
       const smeProfile = await prisma.sMEProfile.findUnique({
         where: { userId }
       });
@@ -110,6 +110,6 @@ export async function GET() {
     
   } catch (error) {
     console.error("Get Projects Error:", error);
-    return handlePrismaApiError(error, "Server Error");
+    return handlePrismaApiError(error, "Không thể tải danh sách dự án lúc này.");
   }
 }

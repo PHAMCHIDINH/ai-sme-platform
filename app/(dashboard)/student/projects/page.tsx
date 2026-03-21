@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
 import Link from "next/link";
 import { rankBySimilarity } from "@/lib/matching";
 import { Building2, CalendarDays, Sparkles, Flame } from "lucide-react";
@@ -24,7 +25,7 @@ type StudentInvitation = {
 export default async function StudentProjectsPage() {
   const session = await auth();
   const studentUserId = getSessionUserIdByRole(session, "STUDENT");
-  if (!studentUserId) return <div>Unauthorized</div>;
+  if (!studentUserId) return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
 
   const profile = await prisma.studentProfile.findUnique({
     where: { userId: studentUserId },
@@ -90,6 +91,10 @@ export default async function StudentProjectsPage() {
     // Nếu chưa có profile, gán score = 0
     rankedProjects = availableProjects.map(p => ({ ...p, matchScore: 0 }));
   }
+
+  const applyDisabledReason = profile
+    ? undefined
+    : "Bạn cần tạo hồ sơ sinh viên trước khi ứng tuyển.";
 
   return (
     <div className="space-y-10 pb-20 fade-in">
@@ -193,6 +198,7 @@ export default async function StudentProjectsPage() {
                 <ApplyButton 
                   projectId={project.id} 
                   matchScore={project.matchScore} 
+                  disabledReason={applyDisabledReason}
                   className={`w-full bg-white text-black text-base ${hoverColor} transition-colors border-0 h-16 uppercase font-black`}
                 />
               </div>

@@ -1,8 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
 
 export function unauthorizedResponse() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return NextResponse.json({ error: ACCESS_MESSAGES.UNAUTHORIZED_API }, { status: 401 });
 }
 
 function getMetaFieldName(error: Prisma.PrismaClientKnownRequestError) {
@@ -28,7 +29,7 @@ function getMetaCause(error: Prisma.PrismaClientKnownRequestError) {
 export function handlePrismaApiError(error: unknown, fallbackMessage: string) {
   if (error instanceof Prisma.PrismaClientInitializationError) {
     return NextResponse.json(
-      { error: "Database connection failed. Please check DATABASE_URL on Vercel." },
+      { error: ACCESS_MESSAGES.DB_UNAVAILABLE },
       { status: 503 },
     );
   }
@@ -38,7 +39,7 @@ export function handlePrismaApiError(error: unknown, fallbackMessage: string) {
     (error.code === "P2021" || error.code === "P2022")
   ) {
     return NextResponse.json(
-      { error: "Database schema is out of date. Run prisma db push/migrate deploy." },
+      { error: ACCESS_MESSAGES.DB_SCHEMA_OUTDATED },
       { status: 500 },
     );
   }

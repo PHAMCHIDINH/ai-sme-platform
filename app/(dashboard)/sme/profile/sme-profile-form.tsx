@@ -17,16 +17,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { type FormActionResult } from "@/lib/types/action-result";
 import { type SmeProfileInput } from "@/lib/validators/sme-profile";
-
-type ActionResult = {
-  success?: true;
-  error?: string;
-};
 
 type SmeProfileFormProps = {
   initialValues: SmeProfileInput;
-  submitAction: (formData: FormData) => Promise<ActionResult>;
+  submitAction: (formData: FormData) => Promise<FormActionResult>;
 };
 
 export function SmeProfileForm({ initialValues, submitAction }: SmeProfileFormProps) {

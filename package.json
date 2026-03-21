@@ -9,14 +9,21 @@
     "dev": "next dev",
     "dev:with-db": "npm run db:up && npm run dev",
     "build": "next build",
-    "vercel-build": "prisma db push && prisma generate && npm run db:seed && next build",
+    "vercel-build": "prisma migrate deploy && prisma generate && npm run db:seed && next build",
     "analyze": "cross-env ANALYZE=true next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:ui-imports": "node scripts/check-ui-imports.mjs",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "ci:verify": "npm run check:ui-imports && npm run check:architecture && npm run lint && npm run typecheck && npm run test && npm run build",
     "postinstall": "prisma generate",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose stop db",
     "db:push": "prisma db push --skip-generate",
+    "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "ts-node --project prisma/tsconfig.seed.json prisma/seed.ts",
     "docker:up": "docker compose up --build -d",
@@ -61,6 +68,7 @@
     "postcss": "8.5.6",
     "tailwindcss": "3.4.19",
     "ts-node": "^10.9.2",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "vitest": "^3.2.4"
   }
 }

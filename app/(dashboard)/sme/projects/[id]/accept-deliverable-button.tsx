@@ -6,14 +6,10 @@ import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
-
-type ActionResult = {
-  success?: true;
-  error?: string;
-};
+import { type FormActionResult } from "@/lib/types/action-result";
 
 type AcceptDeliverableButtonProps = {
-  action: () => Promise<ActionResult>;
+  action: () => Promise<FormActionResult>;
 };
 
 export function AcceptDeliverableButton({ action }: AcceptDeliverableButtonProps) {
