@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     });
 
     if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      return NextResponse.json({ error: "Không tìm thấy dự án." }, { status: 404 });
     }
 
     if (project.sme.userId !== smeUserId) {

@@ -17,18 +17,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-type ActionResult = {
-  success?: true;
-  error?: string;
-};
+import { type FormActionResult } from "@/lib/types/action-result";
 
 type ProjectProgressActionsProps = {
   entryId: string;
   entryStatus: "NOT_STARTED" | "IN_PROGRESS" | "SUBMITTED" | "COMPLETED";
-  addMilestoneAction: (formData: FormData) => Promise<ActionResult>;
-  addProgressUpdateAction: (formData: FormData) => Promise<ActionResult>;
-  submitDeliverableAction: (formData: FormData) => Promise<ActionResult>;
+  addMilestoneAction: (formData: FormData) => Promise<FormActionResult>;
+  addProgressUpdateAction: (formData: FormData) => Promise<FormActionResult>;
+  submitDeliverableAction: (formData: FormData) => Promise<FormActionResult>;
 };
 
 type PendingAction = "milestone" | "update" | "deliverable" | null;
@@ -50,7 +46,7 @@ export function ProjectProgressActions({
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
     actionType: Exclude<PendingAction, null>,
-    action: (formData: FormData) => Promise<ActionResult>,
+    action: (formData: FormData) => Promise<FormActionResult>,
     onSuccess: () => void,
   ) {
     event.preventDefault();

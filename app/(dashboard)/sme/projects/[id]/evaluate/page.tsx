@@ -6,13 +6,11 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
+import { actionFailure, type FormActionResult } from "@/lib/types/action-result";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EvaluateForm } from "./evaluate-form";
-
-type EvaluationActionResult = {
-  error?: string;
-};
 
 function parseRating(value: FormDataEntryValue | null): number | null {
   const rating = Number(value);
@@ -31,7 +29,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
   const smeUserId = getSessionUserIdByRole(session, "SME");
 
   if (!smeUserId) {
-    return <div>Unauthorized</div>;
+    return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
   }
 
   const project = await prisma.project.findUnique({
@@ -65,7 +63,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
   }
 
   if (project.sme.userId !== smeUserId) {
-    return <div>Unauthorized access to this project</div>;
+    return <div>{ACCESS_MESSAGES.FORBIDDEN_PAGE}</div>;
   }
 
   if (project.status !== "COMPLETED") {
@@ -76,14 +74,14 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
     redirect(`/sme/projects/${project.id}`);
   }
 
-  async function submitEvaluation(formData: FormData): Promise<EvaluationActionResult> {
+  async function submitEvaluation(formData: FormData): Promise<FormActionResult> {
     "use server";
 
     const activeSession = await auth();
     const activeSmeUserId = getSessionUserIdByRole(activeSession, "SME");
 
     if (!activeSmeUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return actionFailure("Bạn không có quyền thực hiện thao tác này.");
     }
 
     const ownedProject = await prisma.project.findUnique({
@@ -104,7 +102,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
     });
 
     if (!ownedProject || ownedProject.sme.userId !== activeSmeUserId) {
-      return { error: "Bạn không có quyền đánh giá dự án này." };
+      return actionFailure("Bạn không có quyền đánh giá dự án này.");
     }
 
     if (
@@ -112,7 +110,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
       !ownedProject.progress ||
       ownedProject.evaluations.length > 0
     ) {
-      return { error: "Không thể gửi đánh giá cho dự án này." };
+      return actionFailure("Không thể gửi đánh giá cho dự án này.");
     }
 
     const outputQuality = parseRating(formData.get("outputQuality"));
@@ -128,7 +126,7 @@ export default async function EvaluatePage({ params }: { params: { id: string } 
       communication === null ||
       overallFit === null
     ) {
-      return { error: "Vui lòng chọn điểm 1-5 cho tất cả tiêu chí." };
+      return actionFailure("Vui lòng chọn điểm 1-5 cho tất cả tiêu chí.");
     }
 
     const comment = String(formData.get("comment") ?? "").trim();

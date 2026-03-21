@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Check, X, Loader2, Building2, Flame } from "lucide-react";
 import { respondToInvitation } from "@/app/actions/application";
@@ -20,14 +21,16 @@ type Invitation = {
 };
 
 export function InvitationCard({ invitation }: { invitation: Invitation }) {
+  const router = useRouter();
   const respondMutation = useMutation({
     mutationFn: async (status: "ACCEPTED" | "REJECTED") => {
       const res = await respondToInvitation(invitation.projectId, status);
-      if (res.error) throw new Error(res.error);
+      if (!res.ok) throw new Error(res.error);
       return res;
     },
     onSuccess: (_, status) => {
       toast.success(status === "ACCEPTED" ? "Đã NHẬN DỰ ÁN thành công!" : "Đã từ chối lời mời.");
+      router.refresh();
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Có lỗi xảy ra");

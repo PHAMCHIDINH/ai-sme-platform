@@ -22,7 +22,7 @@ export function CandidateActions({ projectId, studentId }: CandidateActionsProps
     try {
       const result = await updateCandidateStatus(projectId, studentId, status);
 
-      if (result.error) {
+      if (!result.ok) {
         toast.error(result.error);
       } else if (status === "ACCEPTED") {
         toast.success("Đã chấp nhận ứng viên.");

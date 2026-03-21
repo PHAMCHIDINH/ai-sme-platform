@@ -67,6 +67,6 @@ export async function GET(req: Request) {
     return NextResponse.json(scoredStudents);
   } catch (error) {
     console.error("[SME_STUDENTS_GET]", error);
-    return handlePrismaApiError(error, "Internal Server Error");
+    return handlePrismaApiError(error, "Không thể tải danh sách sinh viên lúc này.");
   }
 }

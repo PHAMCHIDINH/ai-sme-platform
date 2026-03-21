@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -10,20 +11,33 @@ import { Button } from "@/components/ui/button";
 type ApplyButtonProps = {
   projectId: string;
   matchScore: number;
+  disabledReason?: string;
 };
 
-export function ApplyButton({ projectId, matchScore, className }: ApplyButtonProps & { className?: string }) {
+export function ApplyButton({
+  projectId,
+  matchScore,
+  disabledReason,
+  className,
+}: ApplyButtonProps & { className?: string }) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleApply() {
+    if (disabledReason) {
+      toast.error(disabledReason);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const result = await applyProject(projectId, matchScore);
 
-      if (result?.error) {
+      if (!result.ok) {
         toast.error(result.error);
       } else {
         toast.success("Ứng tuyển thành công.");
+        router.refresh();
       }
     } catch (error) {
       toast.error(
@@ -39,7 +53,7 @@ export function ApplyButton({ projectId, matchScore, className }: ApplyButtonPro
   return (
     <Button
       className={className || "flex-1 rounded-none shadow-none border-0 text-base font-black uppercase hover:bg-black hover:text-white transition-colors h-14"}
-      disabled={isLoading}
+      disabled={isLoading || Boolean(disabledReason)}
       onClick={handleApply}
       type="button"
     >
@@ -49,7 +63,7 @@ export function ApplyButton({ projectId, matchScore, className }: ApplyButtonPro
           Đang gửi...
         </>
       ) : (
-        "Ứng tuyển ngay"
+        disabledReason ? "Cập nhật hồ sơ để ứng tuyển" : "Ứng tuyển ngay"
       )}
     </Button>
   );

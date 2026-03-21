@@ -14,10 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-
-type EvaluationActionResult = {
-  error?: string;
-};
+import { type FormActionResult } from "@/lib/types/action-result";
 
 type Ratings = {
   outputQuality: number;
@@ -29,7 +26,7 @@ type Ratings = {
 
 type EvaluateFormProps = {
   studentName: string;
-  submitAction: (formData: FormData) => Promise<EvaluationActionResult>;
+  submitAction: (formData: FormData) => Promise<FormActionResult>;
 };
 
 const initialRatings: Ratings = {

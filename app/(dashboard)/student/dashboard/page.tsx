@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -9,7 +10,7 @@ import { Layers, FolderKanban, Star, Award, Code2 } from "lucide-react";
 export default async function StudentDashboardPage() {
   const session = await auth();
   const studentUserId = getSessionUserIdByRole(session, "STUDENT");
-  if (!studentUserId) return <div>Unauthorized</div>;
+  if (!studentUserId) return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
 
   let profile:
     | {

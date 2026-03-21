@@ -40,7 +40,7 @@ export default function SmeStudentsPage() {
     queryFn: async () => {
       const url = search ? `/api/sme/students?q=${encodeURIComponent(search)}` : "/api/sme/students";
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch students");
+      if (!res.ok) throw new Error("Không thể tải danh sách sinh viên.");
       return res.json();
     },
   });
@@ -60,7 +60,7 @@ export default function SmeStudentsPage() {
   const inviteMutation = useMutation({
     mutationFn: async ({ projectId, studentId }: { projectId: string; studentId: string }) => {
       const res = await inviteStudent(projectId, studentId);
-      if (res.error) throw new Error(res.error);
+      if (!res.ok) throw new Error(res.error);
       return res;
     },
     onSuccess: () => {

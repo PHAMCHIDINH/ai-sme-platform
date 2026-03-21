@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { generateEmbedding } from "@/lib/openai";
+import { TimeoutError, validateEmbeddingText, withTimeout } from "@/lib/services/ai-embedding";
 
 const schema = z.object({
   text: z.string().min(1),
@@ -19,11 +20,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const embedding = await generateEmbedding(parsed.data.text);
+    const validated = validateEmbeddingText(parsed.data.text);
+    if (!validated.ok) {
+      return NextResponse.json({ error: validated.error }, { status: 400 });
+    }
+
+    const embedding = await withTimeout(generateEmbedding(validated.value));
     return NextResponse.json({ embedding });
   } catch (error) {
+    if (error instanceof TimeoutError) {
+      console.error("[AI_EMBEDDING_TIMEOUT]", { message: error.message });
+      return NextResponse.json(
+        { error: "Dịch vụ embedding đang quá tải. Vui lòng thử lại sau." },
+        { status: 504 },
+      );
+    }
+
+    console.error("[AI_EMBEDDING_ERROR]", {
+      name: error instanceof Error ? error.name : "UnknownError",
+      message: error instanceof Error ? error.message : String(error),
+    });
+
     return NextResponse.json(
-      { error: "Khong the tao embedding", details: String(error) },
+      { error: "Không thể tạo embedding lúc này." },
       { status: 500 },
     );
   }

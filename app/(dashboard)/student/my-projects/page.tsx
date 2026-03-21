@@ -1,4 +1,3 @@
-import { Prisma, ProgressStatus } from "@prisma/client";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { Clock, CheckCircle2, FileText, ListTodo } from "lucide-react";
@@ -6,372 +5,149 @@ import { Clock, CheckCircle2, FileText, ListTodo } from "lucide-react";
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
+import {
+  addMilestoneForStudent,
+  addProgressUpdateForStudent,
+  parseMilestones,
+  parseProgressUpdates,
+  parseRating,
+  progressStatusBarClassName,
+  progressStatusClassName,
+  progressStatusLabel,
+  submitDeliverableForStudent,
+  submitSmeEvaluationByStudent,
+} from "@/lib/services/progress";
+import { actionFailure, actionSuccess, type FormActionResult } from "@/lib/types/action-result";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProjectProgressActions } from "./project-progress-actions";
 import { SmeEvaluationDialog } from "./sme-evaluation-dialog";
 
-type MilestoneItem = {
-  id: string;
-  title: string;
-  createdAt: string;
-};
-
-type ProgressUpdateItem = {
-  id: string;
-  content: string;
-  createdAt: string;
-};
-
-type ActionResult = {
-  success?: true;
-  error?: string;
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function parseMilestones(value: Prisma.JsonValue): MilestoneItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
-
-    if (
-      typeof item.id !== "string" ||
-      typeof item.title !== "string" ||
-      typeof item.createdAt !== "string"
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        id: item.id,
-        title: item.title,
-        createdAt: item.createdAt,
-      },
-    ];
-  });
-}
-
-function parseProgressUpdates(value: Prisma.JsonValue): ProgressUpdateItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
-
-    if (
-      typeof item.id !== "string" ||
-      typeof item.content !== "string" ||
-      typeof item.createdAt !== "string"
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        id: item.id,
-        content: item.content,
-        createdAt: item.createdAt,
-      },
-    ];
-  });
-}
-
-function statusLabel(status: ProgressStatus) {
-  switch (status) {
-    case "COMPLETED":
-      return "Hoàn thành";
-    case "SUBMITTED":
-      return "Chờ nghiệm thu";
-    case "IN_PROGRESS":
-      return "Đang làm";
-    default:
-      return "Chưa bắt đầu";
-  }
-}
-
-function statusClassName(status: ProgressStatus) {
-  if (status === "COMPLETED") {
-    return "border-green-500 text-green-600";
-  }
-  if (status === "SUBMITTED") {
-    return "border-amber-500 text-amber-600";
-  }
-  return "border-blue-500 text-blue-600";
-}
-
-function statusBarClassName(status: ProgressStatus) {
-  if (status === "COMPLETED") {
-    return "bg-green-500";
-  }
-  if (status === "SUBMITTED") {
-    return "bg-amber-500";
-  }
-  return "bg-blue-500";
-}
-
 function formatDateTime(value: string | Date) {
   return new Date(value).toLocaleString("vi-VN");
-}
-
-function parseRating(value: FormDataEntryValue | null): number | null {
-  const rating = Number(value);
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return null;
-  }
-  return rating;
-}
-
-async function getOwnedProgressEntry(progressId: string, userId: string) {
-  const profile = await prisma.studentProfile.findUnique({
-    where: { userId },
-  });
-
-  if (!profile) {
-    return { error: "Không tìm thấy hồ sơ sinh viên." } as const;
-  }
-
-  const progress = await prisma.projectProgress.findUnique({
-    where: { id: progressId },
-    include: { project: true },
-  });
-
-  if (!progress || progress.studentId !== profile.id) {
-    return { error: "Bạn không có quyền cập nhật tiến độ này." } as const;
-  }
-
-  return { progress } as const;
 }
 
 export default async function StudentMyProjectsPage() {
   const session = await auth();
   const studentUserId = getSessionUserIdByRole(session, "STUDENT");
-  if (!studentUserId) return <div>Unauthorized</div>;
+  if (!studentUserId) return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
 
-  async function addMilestone(progressId: string, formData: FormData): Promise<ActionResult> {
+  async function addMilestone(progressId: string, formData: FormData): Promise<FormActionResult> {
     "use server";
 
     const activeSession = await auth();
     const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
 
     if (!activeStudentUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return actionFailure("Bạn không có quyền thực hiện thao tác này.");
     }
 
     const title = String(formData.get("title") ?? "").trim();
     if (!title) {
-      return { error: "Milestone không được để trống." };
+      return actionFailure("Milestone không được để trống.");
     }
 
-    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
-    if ("error" in result) {
-      return result;
-    }
-
-    if (result.progress.status === "SUBMITTED" || result.progress.status === "COMPLETED") {
-      return { error: "Dự án đã khóa cập nhật tiến độ." };
-    }
-
-    const milestones = parseMilestones(result.progress.milestones);
-    const nextMilestones: MilestoneItem[] = [
-      ...milestones,
-      {
-        id: crypto.randomUUID(),
-        title,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
-    await prisma.projectProgress.update({
-      where: { id: progressId },
-      data: {
-        milestones: nextMilestones,
-        status:
-          result.progress.status === "NOT_STARTED"
-            ? "IN_PROGRESS"
-            : result.progress.status,
-      },
+    const result = await addMilestoneForStudent({
+      progressId,
+      userId: activeStudentUserId,
+      title,
     });
+    if (!result.ok) {
+      return actionFailure(result.error);
+    }
 
     revalidatePath("/student/my-projects");
     revalidatePath("/student/dashboard");
-    revalidatePath(`/sme/projects/${result.progress.projectId}`);
-    return { success: true };
+    revalidatePath(`/sme/projects/${result.data.projectId}`);
+    return actionSuccess();
   }
 
-  async function addProgressUpdate(progressId: string, formData: FormData): Promise<ActionResult> {
+  async function addProgressUpdate(progressId: string, formData: FormData): Promise<FormActionResult> {
     "use server";
 
     const activeSession = await auth();
     const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
 
     if (!activeStudentUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return actionFailure("Bạn không có quyền thực hiện thao tác này.");
     }
 
     const content = String(formData.get("content") ?? "").trim();
     if (!content) {
-      return { error: "Nội dung cập nhật không được để trống." };
+      return actionFailure("Nội dung cập nhật không được để trống.");
     }
 
-    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
-    if ("error" in result) {
-      return result;
-    }
-
-    if (result.progress.status === "SUBMITTED" || result.progress.status === "COMPLETED") {
-      return { error: "Dự án đã khóa cập nhật tiến độ." };
-    }
-
-    const updates = parseProgressUpdates(result.progress.updates);
-    const nextUpdates: ProgressUpdateItem[] = [
-      ...updates,
-      {
-        id: crypto.randomUUID(),
-        content,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
-    await prisma.projectProgress.update({
-      where: { id: progressId },
-      data: {
-        updates: nextUpdates,
-        status:
-          result.progress.status === "NOT_STARTED"
-            ? "IN_PROGRESS"
-            : result.progress.status,
-      },
+    const result = await addProgressUpdateForStudent({
+      progressId,
+      userId: activeStudentUserId,
+      content,
     });
+    if (!result.ok) {
+      return actionFailure(result.error);
+    }
 
     revalidatePath("/student/my-projects");
     revalidatePath("/student/dashboard");
-    revalidatePath(`/sme/projects/${result.progress.projectId}`);
-    return { success: true };
+    revalidatePath(`/sme/projects/${result.data.projectId}`);
+    return actionSuccess();
   }
 
   async function submitDeliverable(
     progressId: string,
     projectId: string,
     formData: FormData,
-  ): Promise<ActionResult> {
+  ): Promise<FormActionResult> {
     "use server";
 
     const activeSession = await auth();
     const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
 
     if (!activeStudentUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
+      return actionFailure("Bạn không có quyền thực hiện thao tác này.");
     }
 
     const deliverableUrl = String(formData.get("deliverableUrl") ?? "").trim();
     if (!deliverableUrl) {
-      return { error: "Link bàn giao không được để trống." };
+      return actionFailure("Link bàn giao không được để trống.");
     }
 
     try {
       new URL(deliverableUrl);
     } catch {
-      return { error: "Link bàn giao không hợp lệ." };
+      return actionFailure("Link bàn giao không hợp lệ.");
     }
 
-    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
-    if ("error" in result) {
-      return result;
+    const result = await submitDeliverableForStudent({
+      progressId,
+      projectId,
+      userId: activeStudentUserId,
+      deliverableUrl,
+    });
+    if (!result.ok) {
+      return actionFailure(result.error);
     }
-
-    if (result.progress.projectId !== projectId) {
-      return { error: "Dữ liệu dự án không hợp lệ." };
-    }
-
-    if (result.progress.status === "SUBMITTED" || result.progress.status === "COMPLETED") {
-      return { error: "Dự án đã được bàn giao hoặc hoàn thành." };
-    }
-
-    await prisma.$transaction([
-      prisma.projectProgress.update({
-        where: { id: progressId },
-        data: {
-          deliverableUrl,
-          status: "SUBMITTED",
-        },
-      }),
-      prisma.project.update({
-        where: { id: projectId },
-        data: { status: "SUBMITTED" },
-      }),
-    ]);
 
     revalidatePath("/student/my-projects");
     revalidatePath("/student/dashboard");
-    revalidatePath(`/sme/projects/${projectId}`);
+    revalidatePath(`/sme/projects/${result.data.projectId}`);
     revalidatePath("/sme/projects");
-    return { success: true };
+    return actionSuccess();
   }
 
   async function submitSmeEvaluation(
     progressId: string,
     projectId: string,
     formData: FormData,
-  ): Promise<ActionResult> {
+  ): Promise<FormActionResult> {
     "use server";
 
     const activeSession = await auth();
     const activeStudentUserId = getSessionUserIdByRole(activeSession, "STUDENT");
 
     if (!activeStudentUserId) {
-      return { error: "Bạn không có quyền thực hiện thao tác này." };
-    }
-
-    const result = await getOwnedProgressEntry(progressId, activeStudentUserId);
-    if ("error" in result) {
-      return result;
-    }
-
-    if (result.progress.projectId !== projectId) {
-      return { error: "Dữ liệu dự án không hợp lệ." };
-    }
-
-    if (
-      result.progress.status !== "COMPLETED" ||
-      result.progress.project.status !== "COMPLETED"
-    ) {
-      return { error: "Chỉ có thể đánh giá khi dự án đã hoàn thành." };
-    }
-
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: {
-        sme: true,
-        evaluations: {
-          where: {
-            type: "STUDENT_TO_SME",
-            evaluatorId: activeStudentUserId,
-          },
-          select: { id: true },
-          take: 1,
-        },
-      },
-    });
-
-    if (!project) {
-      return { error: "Không tìm thấy dự án." };
-    }
-
-    if (project.evaluations.length > 0) {
-      return { error: "Bạn đã đánh giá doanh nghiệp cho dự án này." };
+      return actionFailure("Bạn không có quyền thực hiện thao tác này.");
     }
 
     const outputQuality = parseRating(formData.get("outputQuality"));
@@ -387,30 +163,30 @@ export default async function StudentMyProjectsPage() {
       communication === null ||
       overallFit === null
     ) {
-      return { error: "Vui lòng chọn điểm 1-5 cho tất cả tiêu chí." };
+      return actionFailure("Vui lòng chọn điểm 1-5 cho tất cả tiêu chí.");
     }
 
     const comment = String(formData.get("comment") ?? "").trim();
 
-    await prisma.evaluation.create({
-      data: {
-        projectId,
-        evaluatorId: activeStudentUserId,
-        evaluateeId: project.sme.userId,
-        type: "STUDENT_TO_SME",
-        outputQuality,
-        onTime,
-        proactiveness,
-        communication,
-        overallFit,
-        comment: comment || null,
-      },
+    const result = await submitSmeEvaluationByStudent({
+      progressId,
+      projectId,
+      userId: activeStudentUserId,
+      outputQuality,
+      onTime,
+      proactiveness,
+      communication,
+      overallFit,
+      comment,
     });
+    if (!result.ok) {
+      return actionFailure(result.error);
+    }
 
     revalidatePath("/student/my-projects");
-    revalidatePath(`/sme/projects/${projectId}`);
+    revalidatePath(`/sme/projects/${result.data.projectId}`);
     revalidatePath("/sme/projects");
-    return { success: true };
+    return actionSuccess();
   }
 
   const profile = await prisma.studentProfile.findUnique({
@@ -466,17 +242,17 @@ export default async function StudentMyProjectsPage() {
                 key={entry.id}
                 className="border border-border/50 shadow-sm bg-white/50 backdrop-blur overflow-hidden"
               >
-                <div className={`h-2 w-full ${statusBarClassName(entry.status)}`} />
+                <div className={`h-2 w-full ${progressStatusBarClassName(entry.status)}`} />
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row gap-6 justify-between">
                     <div className="space-y-4 flex-1">
                       <div className="flex items-center gap-3">
                         <h3 className="text-xl font-bold">{entry.project.title}</h3>
                         <Badge
-                          className={statusClassName(entry.status)}
+                          className={progressStatusClassName(entry.status)}
                           variant="outline"
                         >
-                          {statusLabel(entry.status)}
+                          {progressStatusLabel(entry.status)}
                         </Badge>
                       </div>
 

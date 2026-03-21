@@ -1,4 +1,3 @@
-import { Prisma, ProgressStatus } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -15,110 +14,20 @@ import {
 import { auth } from "@/auth";
 import { getSessionUserIdByRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+import { ACCESS_MESSAGES } from "@/lib/services/errors/access-messages";
+import {
+  markProjectCompletedBySme,
+  parseMilestones,
+  parseProgressUpdates,
+  progressStatusClassName,
+  progressStatusLabel,
+} from "@/lib/services/progress";
+import { projectStatusClassName, projectStatusLabel } from "@/lib/services/project/presenter";
+import { actionFailure, actionSuccess, type FormActionResult } from "@/lib/types/action-result";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AcceptDeliverableButton } from "./accept-deliverable-button";
-
-type MilestoneItem = {
-  id: string;
-  title: string;
-  createdAt: string;
-};
-
-type ProgressUpdateItem = {
-  id: string;
-  content: string;
-  createdAt: string;
-};
-
-type ActionResult = {
-  success?: true;
-  error?: string;
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function parseMilestones(value: Prisma.JsonValue): MilestoneItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
-
-    if (
-      typeof item.id !== "string" ||
-      typeof item.title !== "string" ||
-      typeof item.createdAt !== "string"
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        id: item.id,
-        title: item.title,
-        createdAt: item.createdAt,
-      },
-    ];
-  });
-}
-
-function parseProgressUpdates(value: Prisma.JsonValue): ProgressUpdateItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.flatMap((item) => {
-    if (!isRecord(item)) {
-      return [];
-    }
-
-    if (
-      typeof item.id !== "string" ||
-      typeof item.content !== "string" ||
-      typeof item.createdAt !== "string"
-    ) {
-      return [];
-    }
-
-    return [
-      {
-        id: item.id,
-        content: item.content,
-        createdAt: item.createdAt,
-      },
-    ];
-  });
-}
-
-function progressStatusLabel(status: ProgressStatus) {
-  switch (status) {
-    case "COMPLETED":
-      return "Hoàn thành";
-    case "SUBMITTED":
-      return "Đã bàn giao";
-    case "IN_PROGRESS":
-      return "Đang thực hiện";
-    default:
-      return "Chưa bắt đầu";
-  }
-}
-
-function progressStatusClassName(status: ProgressStatus) {
-  if (status === "COMPLETED") {
-    return "border-green-500 text-green-600";
-  }
-  if (status === "SUBMITTED") {
-    return "border-amber-500 text-amber-600";
-  }
-  return "border-blue-500 text-blue-600";
-}
 
 function formatDateTime(value: string | Date) {
   return new Date(value).toLocaleString("vi-VN");
@@ -133,10 +42,10 @@ export default async function SMEProjectDetailPage({
   const smeUserId = getSessionUserIdByRole(session, "SME");
 
   if (!smeUserId) {
-    return <div>Unauthorized</div>;
+    return <div>{ACCESS_MESSAGES.UNAUTHORIZED_PAGE}</div>;
   }
 
-  async function markAsCompleted(projectId: string): Promise<ActionResult> {
+  async function markAsCompleted(projectId: string): Promise<FormActionResult> {
     "use server";
 
     try {
@@ -144,50 +53,25 @@ export default async function SMEProjectDetailPage({
       const activeSmeUserId = getSessionUserIdByRole(activeSession, "SME");
 
       if (!activeSmeUserId) {
-        return { error: "Bạn không có quyền thực hiện thao tác này." };
+        return actionFailure("Bạn không có quyền thực hiện thao tác này.");
       }
 
-      const ownedProject = await prisma.project.findUnique({
-        where: { id: projectId },
-        include: {
-          sme: true,
-          progress: true,
-        },
+      const result = await markProjectCompletedBySme({
+        projectId,
+        userId: activeSmeUserId,
       });
-
-      if (!ownedProject || ownedProject.sme.userId !== activeSmeUserId) {
-        return { error: "Bạn không có quyền nghiệm thu dự án này." };
+      if (!result.ok) {
+        return actionFailure(result.error);
       }
-
-      if (
-        ownedProject.status !== "SUBMITTED" ||
-        ownedProject.progress?.status !== "SUBMITTED" ||
-        !ownedProject.progress.deliverableUrl
-      ) {
-        return {
-          error: "Dự án chưa ở trạng thái chờ nghiệm thu hoặc chưa có link bàn giao.",
-        };
-      }
-
-      await prisma.$transaction([
-        prisma.project.update({
-          where: { id: projectId },
-          data: { status: "COMPLETED" },
-        }),
-        prisma.projectProgress.update({
-          where: { projectId },
-          data: { status: "COMPLETED" },
-        }),
-      ]);
 
       revalidatePath(`/sme/projects/${projectId}`);
       revalidatePath("/sme/projects");
       revalidatePath("/student/my-projects");
       revalidatePath("/student/dashboard");
-      return { success: true };
+      return actionSuccess();
     } catch (error) {
       console.error("markAsCompleted error:", error);
-      return { error: "Không thể nghiệm thu bàn giao lúc này. Vui lòng thử lại." };
+      return actionFailure("Không thể nghiệm thu bàn giao lúc này. Vui lòng thử lại.");
     }
   }
 
@@ -214,7 +98,7 @@ export default async function SMEProjectDetailPage({
   }
 
   if (project.sme.userId !== smeUserId) {
-    return <div>Unauthorized access to this project</div>;
+    return <div>{ACCESS_MESSAGES.FORBIDDEN_PAGE}</div>;
   }
 
   const milestones = project.progress
@@ -238,19 +122,9 @@ export default async function SMEProjectDetailPage({
             <h2 className="text-2xl font-bold tracking-tight">{project.title}</h2>
             <Badge
               variant={project.status === "OPEN" ? "default" : "outline"}
-              className={
-                project.status === "SUBMITTED" ? "border-amber-500 text-amber-600" :
-                project.status === "COMPLETED" ? "border-green-500 text-green-600" :
-                project.status === "IN_PROGRESS" ? "border-blue-500 text-blue-600" :
-                project.status === "DRAFT" ? "border-gray-400 text-gray-500" :
-                undefined
-              }
+              className={project.status === "OPEN" ? undefined : projectStatusClassName(project.status)}
             >
-              {project.status === "OPEN" ? "Đang mở" :
-               project.status === "IN_PROGRESS" ? "Đang tiến hành" :
-               project.status === "SUBMITTED" ? "Chờ nghiệm thu" :
-               project.status === "COMPLETED" ? "Hoàn thành" :
-               "Nháp"}
+              {projectStatusLabel(project.status)}
             </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">

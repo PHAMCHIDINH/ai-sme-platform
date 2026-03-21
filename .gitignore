@@ -19,6 +19,11 @@
 
 # production
 /build
+build.log
+docker_build.log
+errors.txt
+next-build/
+output/
 
 # misc
 .DS_Store

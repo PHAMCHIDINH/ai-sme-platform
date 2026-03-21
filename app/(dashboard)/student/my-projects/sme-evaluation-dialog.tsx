@@ -15,11 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-
-type ActionResult = {
-  success?: true;
-  error?: string;
-};
+import { type FormActionResult } from "@/lib/types/action-result";
 
 type Ratings = {
   outputQuality: number;
@@ -31,7 +27,7 @@ type Ratings = {
 
 type SmeEvaluationDialogProps = {
   companyName: string;
-  submitAction: (formData: FormData) => Promise<ActionResult>;
+  submitAction: (formData: FormData) => Promise<FormActionResult>;
 };
 
 const initialRatings: Ratings = {
